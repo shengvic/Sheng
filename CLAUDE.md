@@ -8,10 +8,10 @@ legal sources with per-claim citation checks, and escalates hard sub-tasks to
 frontier models through a **model-agnostic, conflict-aware router**.
 
 ## Current phase
-- **Phase:** P1 — slice 1 (backend review engine) and slice 2 (review canvas web UI) done.
-  P0 infra items (cloud, OIDC, observability) still open.
-- **Next step:** real OIDC sign-in + admin console UI; real legal corpus ingestion. See
-  `docs/12-roadmap.md` §P1 checklist.
+- **Phase:** P1 — slices 1 (review engine), 2 (review canvas) and 3 (SSO sign-in + admin
+  console) done. P0 infra items (cloud, observability) still open.
+- **Next step:** real legal corpus ingestion; real T1 endpoint + evals; pre-pilot hardening
+  (SCIM, domain verification, rate limits). See `docs/12-roadmap.md` §P1 checklist.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -61,9 +61,11 @@ config/           endpoints.yaml, default_policy.yaml, review.yaml, playbooks/*.
                   jurisdiction_packs/*.yaml
 evals/            gold/nda (synthetic), harness.py, make_gold.py
 tests/            pytest; ephemeral Postgres 16; fixtures/legal_fixture.jsonl (NOT real law)
-scripts/          create_app_role.sql, e2e.sh (Postgres + API + next dev + Playwright)
-apps/web          Next.js 16 review canvas: src/app (routes), src/components, src/lib (api client,
-                  types mirroring schemas.py, findings/keyboard/diff logic + vitest), e2e/
+scripts/          create_app_role.sql, e2e.sh (Postgres + mock IdP + API + next dev + Playwright),
+                  mock_oidc.py (test-only OIDC provider)
+apps/web          Next.js 16: src/app (pages; auth/* + api/[...path] BFF route handlers; admin),
+                  src/proxy.ts (CSP nonce, login redirect), src/components, src/lib (api client,
+                  types mirroring schemas.py, csrf/pkce/csp + vitest), e2e/
 ```
 Not yet created (planned): `apps/word-addin`, `services/flywheel`, `packages/schemas`, `infra/`.
 
@@ -76,8 +78,9 @@ make db-up db-migrate dev   # local API on :8000 (needs Docker + .env from .env.
 make worker       # process queued review runs (or TRAVO_INLINE_REVIEWS=true for dev)
 make ingest-legal FILE=units.jsonl   # load legal units into the shared index (owner conn)
 make web-install web-check           # pnpm install; tsc + eslint + vitest
-make dev-token                       # demo tenant + partner token for the web sign-in
-make web-dev                         # Next on :3000, proxies /api → TRAVO_API_URL (:8000)
+make dev-token                       # demo tenant + partner token (dev sign-in form)
+make web-dev                         # Next on :3000 with TRAVO_DEV_LOGIN=true; BFF → TRAVO_API_URL
+make mock-idp                        # local OIDC provider on :8791 (then `cli configure-idp`)
 make e2e                             # full browser flow (needs Postgres binaries + Chromium)
 PYTHONPATH=services/api:services/rag:services/router:services/agents \
   uv run python -m travo_api.cli bootstrap-tenant "Firm" admin@firm.test   # then mint-token
@@ -98,4 +101,9 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
   statute text by hand (ADR-014). Fixture units are titled "FIXTURE — not law".
 - Few-shot examples are filtered to matters the initiator is a member of (ADR-015).
 - Web: `apps/web/src/lib/types.ts` mirrors `schemas.py` — change both together. The browser only
-  calls `/api/*` (same origin). Use `localhost`, not `127.0.0.1`, for `next dev`.
+  calls `/api/*` and `/auth/*` (same origin) and never holds a bearer token: it lives in the
+  httpOnly `travo_session` cookie. Writes need the `X-Travo-CSRF: 1` header. Use `localhost`, not
+  `127.0.0.1`, for `next dev`. Next 16 calls middleware `proxy.ts`.
+- Sign-in: the API maps IdP identities to existing users only (no JIT); cross-firm lookups only
+  via `idp_for_email_domain()` / `idp_by_id()`. `TRAVO_ALLOW_DEV_TOKENS` must be false in any
+  deployment with client data (ADR-018).

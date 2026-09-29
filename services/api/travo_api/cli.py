@@ -71,6 +71,12 @@ def main() -> None:
     w.add_argument("--once", action="store_true", help="drain the queue once and exit")
     w.add_argument("--poll", type=float, default=2.0)
     sub.add_parser("dev-token", help="demo tenant + partner; prints a 12h token (dev only)")
+    c = sub.add_parser("configure-idp", help="set a firm's OIDC identity provider")
+    c.add_argument("tenant_id")
+    c.add_argument("issuer")
+    c.add_argument("client_id")
+    c.add_argument("--domain", action="append", required=True)
+    c.add_argument("--client-secret")
     i = sub.add_parser("ingest-legal")
     i.add_argument("path")
     args = p.parse_args()
@@ -83,6 +89,12 @@ def main() -> None:
         print(mint_dev_token(args.user_id, args.tenant_id, args.ttl))
     elif args.cmd == "dev-token":
         print(dev_token())
+    elif args.cmd == "configure-idp":
+        print(
+            configure_idp(
+                args.tenant_id, args.issuer, args.client_id, args.domain, args.client_secret
+            )
+        )
     elif args.cmd == "worker":
         run_worker(args.once, args.poll)
     else:
@@ -114,10 +126,6 @@ def ingest_legal(path: str) -> int:
         return upsert_units(conn, units)
 
 
-if __name__ == "__main__":
-    main()
-
-
 DEV_TENANT = "Travo Demo LLP"
 
 
@@ -137,3 +145,31 @@ def dev_token() -> str:
         tid, _admin = bootstrap_tenant(DEV_TENANT, "admin@demo.travo.test")
         uid = add_user(tid, "partner@demo.travo.test", "partner")
     return mint_dev_token(str(uid), tid, 12 * 3600)
+
+
+def configure_idp(
+    tenant_id: str, issuer: str, client_id: str, domains: list[str], secret: str | None
+) -> str:
+    from sqlalchemy import delete, select
+
+    from travo_api.keys import encrypt_idp_secret
+    from travo_api.models import IdpDomain, TenantIdp
+
+    with Session(get_admin_engine()) as s, s.begin():
+        set_tenant(s, tenant_id)
+        row = s.scalar(select(TenantIdp).where(TenantIdp.tenant_id == uuid.UUID(tenant_id)))
+        if row is None:
+            row = TenantIdp(tenant_id=uuid.UUID(tenant_id), issuer=issuer, client_id=client_id)
+            s.add(row)
+            s.flush()
+        row.issuer, row.client_id, row.enabled = issuer.rstrip("/"), client_id, True
+        if secret:
+            row.client_secret_ciphertext = encrypt_idp_secret(s, tenant_id, row.id, secret)
+        s.execute(delete(IdpDomain).where(IdpDomain.idp_id == row.id))
+        for d in sorted({d.lower().strip() for d in domains}):
+            s.add(IdpDomain(domain=d, idp_id=row.id, tenant_id=row.tenant_id))
+        return str(row.id)
+
+
+if __name__ == "__main__":
+    main()

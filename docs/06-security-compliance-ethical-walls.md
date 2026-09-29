@@ -61,3 +61,28 @@ Tenant (law firm)  ── KMS key, DB RLS, vector namespace root, object-store p
 | P2 | SOC 2 Type I, ISO/IEC 27001 gap assessment, SG MTCS/CSA Cyber Trust mark `[verify]` |
 | P3 | SOC 2 Type II, ISO 27001 certified, ISO/IEC 42001 (AI management) readiness |
 | P4 | ISO 42001, customer-specific audits, on-prem deployment hardening guide |
+
+## 7. As built — sign-in, sessions and browser security (2026-09-29, ADR-018)
+- **Per-firm SSO (OIDC).** Authorization code + PKCE (S256). The API does discovery, the code
+  exchange (client secrets stay in the API, encrypted with the firm's key) and id_token
+  validation: signature via JWKS (rotation-aware), `iss`, `aud`/`azp`, `exp`/`iat` (60 s leeway),
+  `nonce`, `email_verified`. State is checked by the web BFF. Failures return a generic
+  "sign-in failed"; the reason goes to the audit log (`auth.login_failed`).
+- **No JIT provisioning.** Users must exist; first sign-in binds the IdP subject, later sign-ins
+  must match it (an email re-assigned to another IdP identity is refused).
+- **One firm per email domain**, enforced by a global primary key. Domain ownership
+  verification (DNS TXT) is a pre-GA item `[verify]`.
+- **Sessions are server-side and revocable** (`auth_sessions`, 8 h). Users can sign out; admins
+  can revoke any session. Tokens without a session (dev tokens) are refused when
+  `TRAVO_ALLOW_DEV_TOKENS=false`, which is mandatory wherever client data lives.
+- **Browser never holds a bearer token.** The Next.js BFF keeps it in an httpOnly, SameSite=Lax
+  (Secure in production) cookie and adds it server-side on `/api/*`.
+- **CSRF:** writes through the BFF need `X-Travo-CSRF: 1` and a same-origin `Origin`.
+- **CSP:** per-request nonce, `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `unsafe-eval` in
+  production), `frame-ancestors 'none'`, `form-action 'self'`, `object-src 'none'`; plus
+  `X-Frame-Options`, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`.
+  `style-src` still allows inline styles (React style attributes).
+- **Cross-tenant lookups at sign-in** go only through `idp_for_email_domain()` / `idp_by_id()`
+  (SECURITY DEFINER, role `travo_idp_lookup`), which return ids and public IdP coordinates.
+- Not yet: SCIM provisioning, MFA policy enforcement beyond the IdP, rate limiting on
+  `/v1/auth/*`, IdP-initiated logout.

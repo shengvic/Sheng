@@ -6,7 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { t } from "@/i18n/en";
-import { api, tokenStore } from "@/lib/api";
+import { api } from "@/lib/api";
+import { CSRF_HEADER } from "@/lib/csrf";
 
 import { Button, cx } from "./ui";
 
@@ -41,19 +42,18 @@ function ThemeToggle() {
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
+  // proxy.ts already redirected requests without a session cookie; the API decides validity.
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me });
 
-  useEffect(() => {
-    if (!tokenStore.get()) router.replace("/login");
-    else setReady(true);
-  }, [router]);
+  async function signOut() {
+    await fetch("/auth/logout", { method: "POST", headers: { [CSRF_HEADER]: "1" } }).catch(() => null);
+    router.replace("/login");
+  }
 
-  const me = useQuery({ queryKey: ["me"], queryFn: api.me, enabled: ready });
-
-  if (!ready) return null;
   const nav = [
     { href: "/matters", label: t.nav.matters },
     { href: "/playbooks", label: t.nav.playbooks },
+    ...(me.data?.role === "admin" ? [{ href: "/admin", label: t.nav.admin }] : []),
   ];
   return (
     <div className="flex min-h-screen flex-col">
@@ -84,14 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {me.data.name} · <span className="capitalize">{me.data.role}</span> · {me.data.tenant_name}
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                tokenStore.clear();
-                router.replace("/login");
-              }}
-            >
+            <Button variant="ghost" size="sm" onClick={signOut}>
               {t.auth.signOut}
             </Button>
           </div>

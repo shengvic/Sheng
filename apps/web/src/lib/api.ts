@@ -1,5 +1,13 @@
 import type {
+  AuditRow,
+  AuthSessionRow,
   Citation,
+  Credential,
+  EndpointInfo,
+  IdpConfig,
+  PolicyDoc,
+  RoutingPlan,
+  Spend,
   Clause,
   DocumentRow,
   DispositionAction,
@@ -15,7 +23,7 @@ import type {
   RoutingRow,
 } from "./types";
 
-const TOKEN_KEY = "travo.token";
+import { CSRF_HEADER } from "./csrf";
 
 export class ApiError extends Error {
   constructor(
@@ -44,35 +52,16 @@ export class ApiError extends Error {
   }
 }
 
-export interface Storage {
-  getItem(k: string): string | null;
-  setItem(k: string, v: string): void;
-  removeItem(k: string): void;
-}
-
-function storage(): Storage | null {
-  try {
-    return typeof window === "undefined" ? null : window.sessionStorage;
-  } catch {
-    return null;
-  }
-}
-
-export const tokenStore = {
-  get: (s: Storage | null = storage()) => s?.getItem(TOKEN_KEY) ?? null,
-  set: (t: string, s: Storage | null = storage()) => s?.setItem(TOKEN_KEY, t.trim()),
-  clear: (s: Storage | null = storage()) => s?.removeItem(TOKEN_KEY),
-};
-
 type Fetch = typeof fetch;
 
-export function createClient(fetchImpl: Fetch = (...a) => fetch(...a), getToken = () => tokenStore.get()) {
+/** The browser never holds a bearer token: `/api/*` is a same-origin BFF that adds it from an
+ * httpOnly cookie (ADR-018). Every call carries the CSRF header the BFF requires. */
+export function createClient(fetchImpl: Fetch = (...a) => fetch(...a)) {
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
-    const token = getToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+    headers.set(CSRF_HEADER, "1");
     if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
-    const res = await fetchImpl(`/api${path}`, { ...init, headers });
+    const res = await fetchImpl(`/api${path}`, { ...init, headers, credentials: "same-origin" });
     if (res.status === 204) return undefined as T;
     const isJson = res.headers.get("content-type")?.includes("application/json");
     const body = isJson ? await res.json() : await res.text();
@@ -81,9 +70,9 @@ export function createClient(fetchImpl: Fetch = (...a) => fetch(...a), getToken 
   }
 
   async function download(path: string): Promise<Blob> {
-    const token = getToken();
     const res = await fetchImpl(`/api${path}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { [CSRF_HEADER]: "1" },
+      credentials: "same-origin",
     });
     if (!res.ok) throw new ApiError(res.status, await res.text());
     return res.blob();
@@ -132,6 +121,30 @@ export function createClient(fetchImpl: Fetch = (...a) => fetch(...a), getToken 
     legalUnit: (unitId: string) => request<LegalUnit>(`/v1/legal-units/${encodeURIComponent(unitId)}`),
     playbooks: () => request<PlaybookSummary[]>("/v1/playbooks"),
     playbook: (key: string) => request<PlaybookSummary>(`/v1/playbooks/${encodeURIComponent(key)}`),
+
+    // Admin console (admin role; the API enforces it).
+    policy: () => request<PolicyDoc>("/v1/admin/model-policy"),
+    savePolicy: (yaml: string) => request<PolicyDoc>("/v1/admin/model-policy", { method: "PUT", body: json({ yaml }) }),
+    dryRun: (body: { task_type: string; matter_id?: string; escalation_reason?: string; yaml?: string }) =>
+      request<RoutingPlan>("/v1/admin/model-policy/dry-run", { method: "POST", body: json(body) }),
+    endpoints: () => request<EndpointInfo[]>("/v1/admin/endpoints"),
+    credentials: () => request<Credential[]>("/v1/admin/provider-credentials"),
+    addCredential: (provider: string, api_key: string) =>
+      request<Credential>("/v1/admin/provider-credentials", { method: "POST", body: json({ provider, api_key }) }),
+    revokeCredential: (provider: string) =>
+      request<void>(`/v1/admin/provider-credentials/${encodeURIComponent(provider)}`, { method: "DELETE" }),
+    spend: () => request<Spend>("/v1/admin/spend"),
+    audit: (params: { action?: string; limit?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.action) q.set("action", params.action);
+      q.set("limit", String(params.limit ?? 200));
+      return request<AuditRow[]>(`/v1/admin/audit?${q}`);
+    },
+    idp: () => request<IdpConfig | null>("/v1/admin/idp"),
+    saveIdp: (body: { issuer: string; client_id: string; client_secret?: string; email_domains: string[]; enabled: boolean }) =>
+      request<IdpConfig>("/v1/admin/idp", { method: "PUT", body: json(body) }),
+    sessions: () => request<AuthSessionRow[]>("/v1/admin/sessions"),
+    revokeSession: (id: string) => request<void>(`/v1/admin/sessions/${id}/revoke`, { method: "POST" }),
   };
 }
 

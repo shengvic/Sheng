@@ -31,3 +31,7 @@
 | **Fixture corpus** | Synthetic legal units used in tests, titled "FIXTURE — not law". |
 | **Few-shot memory** | Reusing the firm's accepted/edited redlines as examples, limited to matters the user may see. |
 | **needs_human** | Finding status when no permitted model could produce a validated answer. |
+| **BFF** | Backend-for-frontend: the Next.js server routes (`/api/*`, `/auth/*`) that hold the session and call the API for the browser. |
+| **Session token** | Travo JWT with a `sid` claim backed by a revocable `auth_sessions` row; lives only in an httpOnly cookie. |
+| **PKCE** | Proof Key for Code Exchange: binds the OIDC authorization code to the client that started sign-in. |
+| **Dev token** | Session-less token from `mint-token`/`dev-token`; only accepted when `TRAVO_ALLOW_DEV_TOKENS=true`. |

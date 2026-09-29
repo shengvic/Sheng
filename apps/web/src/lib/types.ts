@@ -228,3 +228,97 @@ export const REASON_CODES = [
 export type ReasonCode = (typeof REASON_CODES)[number];
 
 export type DispositionAction = "accept" | "edit" | "reject" | "defer" | "reset";
+
+// ---- Admin console ----------------------------------------------------------------------
+
+export interface PolicyDoc {
+  version: number;
+  yaml: string;
+  source: "tenant" | "default";
+}
+
+export interface PlanCandidate {
+  endpoint_id: string;
+  provider: string;
+  tier: string;
+  est_cost_usd: number;
+}
+
+export interface RoutingPlan {
+  candidates: PlanCandidate[];
+  filtered: { endpoint_id: string; provider: string; reason: string }[];
+  preferred_tier: string;
+  budget_exceeded: boolean;
+}
+
+export interface EndpointInfo {
+  id: string;
+  provider: string;
+  via: string | null;
+  model: string;
+  tier: string;
+  billing: string;
+  regions: string[];
+  enabled: boolean;
+}
+
+export interface Credential {
+  provider: string;
+  last4: string;
+  status: "active" | "revoked";
+}
+
+export interface SpendRow {
+  key: string | null;
+  cost_usd: number;
+  calls: number;
+}
+
+export interface Spend {
+  by_matter: SpendRow[];
+  by_task: SpendRow[];
+  by_tier: SpendRow[];
+}
+
+export interface AuditRow {
+  id: number;
+  actor_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  matter_id: string | null;
+  result: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface IdpConfig {
+  id: string;
+  issuer: string;
+  client_id: string;
+  has_client_secret: boolean;
+  email_domains: string[];
+  enabled: boolean;
+  updated_at: string;
+}
+
+export interface AuthSessionRow {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  method: string;
+  created_at: string;
+  expires_at: string;
+  user_agent: string | null;
+  current: boolean;
+}
+
+export const TASK_TYPES = [
+  "classify",
+  "clause_extraction",
+  "playbook_compare",
+  "law_check",
+  "validate_claim",
+  "redline",
+  "memo",
+] as const;

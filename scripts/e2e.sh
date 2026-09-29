@@ -8,11 +8,14 @@ PGB="${TRAVO_PG_BIN:-/usr/lib/postgresql/16/bin}"
 PG_PORT="${E2E_PG_PORT:-55440}"
 API_PORT="${E2E_API_PORT:-8790}"
 WEB_PORT="${E2E_WEB_PORT:-3790}"
+IDP_PORT="${E2E_IDP_PORT:-8791}"
 WORK="$(mktemp -d /tmp/travo-e2e-XXXX)"
 as_pg() { if [ "$(id -u)" = 0 ]; then runuser -u postgres -- "$@"; else "$@"; fi; }
 cleanup() {
   [ -n "${WEB_PID:-}" ] && kill "$WEB_PID" 2>/dev/null || true
+  pkill -f "next dev -p $WEB_PORT" 2>/dev/null || true   # pnpm leaves next as a grandchild
   [ -n "${API_PID:-}" ] && kill "$API_PID" 2>/dev/null || true
+  [ -n "${IDP_PID:-}" ] && kill "$IDP_PID" 2>/dev/null || true
   if [ -z "${TRAVO_TEST_ADMIN_DATABASE_URL:-}" ]; then
     as_pg "$PGB/pg_ctl" -D "$WORK/data" -m fast stop >/dev/null 2>&1 || true
   fi
@@ -53,13 +56,24 @@ TID="$(echo "$OUT" | sed -n 's/tenant_id=//p')"
 PARTNER="$($CLI add-user "$TID" wei.ling@lionpartners.test partner)"
 export E2E_TOKEN="$($CLI mint-token "$TID" "$PARTNER" --ttl 7200)"
 
+# Mock identity provider (test only) + the firm's SSO settings.
+IDP_SECRET="e2e-$(python3 -c 'import secrets;print(secrets.token_hex(8))')"
+uv run python -m scripts.mock_oidc --port "$IDP_PORT" --client-id travo-web \
+  --client-secret "$IDP_SECRET" --user admin@lionpartners.test --user wei.ling@lionpartners.test \
+  >"$WORK/idp.log" 2>&1 &
+IDP_PID=$!
+$CLI configure-idp "$TID" "http://localhost:$IDP_PORT" travo-web \
+  --client-secret "$IDP_SECRET" --domain lionpartners.test >/dev/null
+
 uv run uvicorn travo_api.main:app --port "$API_PORT" >"$WORK/api.log" 2>&1 &
 API_PID=$!
-(cd apps/web && TRAVO_API_URL="http://127.0.0.1:$API_PORT" NEXT_TELEMETRY_DISABLED=1 \
+(cd apps/web && TRAVO_API_URL="http://127.0.0.1:$API_PORT" TRAVO_DEV_LOGIN=true NEXT_TELEMETRY_DISABLED=1 \
   pnpm exec next dev -p "$WEB_PORT" >"$WORK/web.log" 2>&1) &
 WEB_PID=$!
 for _ in $(seq 120); do
-  curl -sf "http://127.0.0.1:$API_PORT/healthz" >/dev/null && curl -sf -o /dev/null "http://127.0.0.1:$WEB_PORT/login" && break
+  curl -sf "http://127.0.0.1:$API_PORT/healthz" >/dev/null \
+    && curl -sf -o /dev/null "http://localhost:$IDP_PORT/.well-known/openid-configuration" \
+    && curl -sf -o /dev/null "http://localhost:$WEB_PORT/login" && break
   sleep 1
 done
 
@@ -70,5 +84,6 @@ status=0
 if [ "$status" != 0 ]; then
   echo "---- api.log (tail) ----"; tail -40 "$WORK/api.log"
   echo "---- web.log (tail) ----"; tail -40 "$WORK/web.log"
+  echo "---- idp.log (tail) ----"; tail -20 "$WORK/idp.log"
 fi
 exit "$status"

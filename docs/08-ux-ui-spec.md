@@ -99,3 +99,18 @@ recorded in telemetry and audit like any other action.
 
 Not yet: admin console (policy editor, keys, spend UI), tabular review, Word add-in, SSE,
 vi/id/ms dictionaries (strings are centralised in `src/i18n/en.ts`), "Travo is learning" digest.
+
+## 8. As built — sign-in and admin console (2026-09-29)
+- **Sign-in:** work email → "Continue with single sign-on" → firm IdP → back to the page the user
+  wanted. Clear messages for unknown domains, cancelled sign-in, unavailable IdP. A development
+  token form appears only when `TRAVO_DEV_LOGIN=true`.
+- **Admin console** (`/admin`, admin role; nav item hidden for others; API enforces it):
+  - *Model policy* — YAML editor with server validation and versioning; "Test the policy" shows
+    the ordered models a task would use and why each other endpoint is skipped (works on unsaved
+    edits); endpoint catalogue.
+  - *API keys* — add/rotate/revoke BYO keys; only the last 4 characters are ever shown.
+  - *Spend* — total spend, model calls, frontier share; bars of model calls by task, tier and
+    matter (cost printed per bar; walled matters appear by id only).
+  - *Audit log* — filter by action.
+  - *Sign-in (SSO)* — issuer, client id, write-only secret, email domains, enable; active
+    sessions with revoke (revoking your own signs you out).

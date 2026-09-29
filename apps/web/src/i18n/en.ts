@@ -1,15 +1,25 @@
 // UI strings (English). vi / id / ms dictionaries follow the same keys (docs/08 §5).
 export const t = {
   appName: "Travo",
-  nav: { matters: "Matters", playbooks: "Playbooks" },
+  nav: { matters: "Matters", playbooks: "Playbooks", admin: "Admin" },
   auth: {
     title: "Sign in to Travo",
+    emailLabel: "Work email",
+    sso: "Continue with single sign-on",
+    ssoHelp: "You will be sent to your firm's sign-in page.",
+    devTitle: "Development sign-in",
     tokenLabel: "Access token",
-    tokenHelp:
-      "Development sign-in: paste a token from `make dev-token`. Single sign-on (OIDC) replaces this before pilots.",
-    submit: "Sign in",
+    tokenHelp: "Paste a token from `make dev-token`. Disabled outside development.",
+    submit: "Sign in with token",
     invalid: "That token was not accepted.",
     signOut: "Sign out",
+    errors: {
+      email: "Enter a valid work email address.",
+      no_sso: "Single sign-on is not set up for this email domain. Ask your firm's Travo admin.",
+      unavailable: "Your firm's sign-in service is unavailable. Try again shortly.",
+      denied: "Sign-in was cancelled at your identity provider.",
+      signin_failed: "Sign-in failed. If this keeps happening, contact your firm's Travo admin.",
+    } as Record<string, string>,
   },
   matters: {
     title: "Matters",

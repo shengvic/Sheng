@@ -56,3 +56,19 @@ def load_credential(session: Session, tenant_id: str, provider: str) -> str | No
         return None
     dek = tenant_dek(session, tenant_id)
     return crypto.decrypt(dek, row.ciphertext, _cred_aad(tenant_id, provider)).decode()
+
+
+def _idp_aad(tenant_id: str, idp_id: object) -> str:
+    return f"{tenant_id}/idp/{idp_id}"
+
+
+def encrypt_idp_secret(session: Session, tenant_id: str, idp_id: object, secret: str) -> bytes:
+    return crypto.encrypt(
+        tenant_dek(session, tenant_id), secret.encode(), _idp_aad(tenant_id, idp_id)
+    )
+
+
+def decrypt_idp_secret(session: Session, tenant_id: str, idp_id: object, blob: bytes) -> str:
+    return crypto.decrypt(
+        tenant_dek(session, tenant_id), blob, _idp_aad(tenant_id, idp_id)
+    ).decode()

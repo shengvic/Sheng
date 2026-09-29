@@ -48,7 +48,7 @@ Chosen for **time to market** with a small team, while keeping every piece swapp
 | Cross-encoder reranker | Lexical-overlap reranker | Needs a hosted T0 reranker |
 | SSE progress | Polling `GET /v1/reviews/{id}` every 2 s while running (web UI) | Move to SSE when runs get long |
 | shadcn/ui | Small in-house primitives (`apps/web/src/components/ui.tsx`) on Tailwind 4 | Fewer deps; adopt shadcn if the component set grows |
-| OIDC sign-in in web | Dev token in `sessionStorage`, same-origin `/api` proxy (ADR-017) | Replace with OIDC (auth code + PKCE, httpOnly session cookie) before pilots |
+| OIDC sign-in in web | Done in slice 3: per-firm OIDC, API-side code exchange, httpOnly cookie via Next BFF, nonce CSP (ADR-018) | WorkOS/Auth0 not needed yet; revisit for SAML-only firms |
 
 ## Monorepo layout
 See `CLAUDE.md` → "Repo layout". Tooling: `pnpm` workspaces (TS), `uv` (Python), `make` targets for dev (`make dev`, `make test`, `make eval`).

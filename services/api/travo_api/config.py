@@ -20,7 +20,11 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     jwt_audience: str = "travo-api"
     jwt_issuer: str = "travo-dev"
-    oidc_jwks_url: str | None = None
+    # Session length for SSO sign-ins (ADR-018).
+    session_ttl_seconds: int = 8 * 3600
+    # Tokens without a server-side session (`mint-token`, `dev-token`). MUST be false in any
+    # deployment that holds client data.
+    allow_dev_tokens: bool = True
     storage_dir: Path = ROOT / ".data" / "objects"
     endpoints_file: Path = ROOT / "config" / "endpoints.yaml"
     default_policy_file: Path = ROOT / "config" / "default_policy.yaml"

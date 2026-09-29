@@ -25,6 +25,8 @@
   --ins-bg: #e3f3e8;
   --del: #b42318;
   --del-bg: #fdecea;
+  /* Data marks (validated with the dataviz checks: blue 450 on #fff). */
+  --data-1: #2a78d6;
   color-scheme: light;
 }
 
@@ -52,6 +54,7 @@
     --ins-bg: #173021;
     --del: #ff8a7a;
     --del-bg: #3a1c19;
+    --data-1: #3987e5;
     color-scheme: dark;
   }
 }
@@ -79,6 +82,7 @@
   --ins-bg: #173021;
   --del: #ff8a7a;
   --del-bg: #3a1c19;
+  --data-1: #3987e5;
   color-scheme: dark;
 }
 
@@ -100,6 +104,7 @@
   --color-low-soft: var(--low-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-data-1: var(--data-1);
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
 }

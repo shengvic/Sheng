@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 
-const token = process.env.E2E_TOKEN ?? "";
+const token = process.env.E2E_TOKEN ?? ""; // presence = harness is running
 const fixtures = process.env.E2E_FIXTURES ?? "";
 const shots = process.env.E2E_SCREENSHOTS;
 
@@ -14,12 +14,16 @@ test("lawyer reviews an NDA end to end", async ({ page }) => {
   test.skip(!token, "E2E_TOKEN not set — run via scripts/e2e.sh");
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  // Sign in (dev token).
-  await page.goto("/login");
-  await page.getByLabel("Access token").fill(token);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  // Sign in with single sign-on (mock IdP in e2e).
+  await page.goto("/matters");
+  await expect(page).toHaveURL(/\/login/);
+  await page.getByLabel("Work email").fill("wei.ling@lionpartners.test");
+  await page.getByRole("button", { name: "Continue with single sign-on" }).click();
   await expect(page).toHaveURL(/\/matters$/);
   await expect(page.getByTestId("whoami")).toContainText("Partner");
+  // The browser never holds the bearer token.
+  expect(await page.evaluate(() => document.cookie)).not.toContain("travo_session");
+  expect(await page.evaluate(() => JSON.stringify(sessionStorage) + JSON.stringify(localStorage))).not.toMatch(/eyJ/);
 
   // Create a matter with a provider conflict.
   await page.getByRole("button", { name: "New matter" }).click();

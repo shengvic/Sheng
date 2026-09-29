@@ -293,3 +293,70 @@ class ReviewRoutingOut(BaseModel):
     cost_usd: float
     latency_ms: int
     created_at: datetime
+
+
+class OidcStartIn(BaseModel):
+    email: str = Field(min_length=3, max_length=320, pattern=r"^[^@\s]+@[^@\s]+$")
+
+
+class OidcStartOut(BaseModel):
+    idp_id: uuid.UUID
+    authorization_endpoint: str
+    client_id: str
+    scopes: str = "openid email profile"
+
+
+class OidcCallbackIn(BaseModel):
+    idp_id: uuid.UUID
+    code: str = Field(min_length=1, max_length=4096)
+    code_verifier: str = Field(min_length=43, max_length=128)
+    redirect_uri: str = Field(max_length=2000)
+    nonce: str = Field(min_length=16, max_length=256)
+
+
+class SessionOut(BaseModel):
+    token: str
+    expires_at: datetime
+    user: MeOut
+
+
+class IdpIn(BaseModel):
+    issuer: str = Field(pattern=r"^https?://\S+$", max_length=500)
+    client_id: str = Field(min_length=1, max_length=500)
+    client_secret: str | None = Field(default=None, max_length=2000)  # write-only
+    email_domains: list[str] = Field(min_length=1, max_length=20)
+    enabled: bool = True
+
+
+class IdpOut(BaseModel):
+    id: uuid.UUID
+    issuer: str
+    client_id: str
+    has_client_secret: bool
+    email_domains: list[str]
+    enabled: bool
+    updated_at: datetime
+
+
+class AuthSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    user_id: uuid.UUID
+    method: str
+    created_at: datetime
+    expires_at: datetime
+    revoked_at: datetime | None
+    user_agent: str | None
+    user_email: str | None = None
+    current: bool = False
+
+
+class EndpointOut(BaseModel):
+    id: str
+    provider: str
+    via: str | None
+    model: str
+    tier: str
+    billing: str
+    regions: list[str]
+    enabled: bool

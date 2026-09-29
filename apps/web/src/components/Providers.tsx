@@ -4,7 +4,7 @@ import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-qu
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
-import { ApiError, tokenStore } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -14,8 +14,8 @@ export function Providers({ children }: { children: ReactNode }) {
         queryCache: new QueryCache({
           onError: (err) => {
             if (err instanceof ApiError && err.status === 401) {
-              tokenStore.clear();
-              router.replace("/login");
+              const next = window.location.pathname + window.location.search;
+              router.replace(`/login?next=${encodeURIComponent(next)}`);
             }
           },
         }),

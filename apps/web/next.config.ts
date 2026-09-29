@@ -1,17 +1,12 @@
 import type { NextConfig } from "next";
 
-// The browser only talks to this origin; /api/* is proxied to the Travo API so no CORS surface
-// is exposed (ADR-017).
-const apiUrl = process.env.TRAVO_API_URL ?? "http://localhost:8000";
-
+// The browser only talks to this origin. /api/* and /auth/* are route handlers (a BFF) that
+// hold the session server-side (ADR-018). Page CSP is set per request in src/proxy.ts.
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   // Do not generate AGENTS.md / CLAUDE.md into the app; project memory lives at the repo root.
   agentRules: false,
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
-  },
   async headers() {
     return [
       {
@@ -20,6 +15,7 @@ const config: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
     ];

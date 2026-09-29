@@ -12,6 +12,15 @@ Template:
 
 ---
 
+## 2026-09-29 — P1 slice 3: SSO sign-in + admin console
+- **Done:** Per-firm OIDC sign-in (auth code + PKCE; API-side code exchange and id_token validation; subject binding; no JIT), revocable server-side sessions, global one-firm-per-domain rule, SECURITY DEFINER sign-in lookups, dev tokens gated by `TRAVO_ALLOW_DEV_TOKENS`. Web: Next BFF (`/auth/*`, `/api/*` proxy adding the token from an httpOnly cookie), CSRF header + Origin checks, per-request nonce CSP in `proxy.ts`, new login page, admin console (model policy editor + dry-run, BYO keys, spend bars, audit, SSO settings + sessions). Mock OIDC provider (`scripts/mock_oidc.py`) for pytest and e2e; `configure-idp` CLI. Tests: 117 pytest, 26 vitest, 6 Playwright specs (SSO review flow, admin flow, CSP header + no CSP violations, CSRF refusal, partner denied admin, dev-token path).
+- **Decisions:** ADR-018 (supersedes ADR-017's auth).
+- **Next:**
+  1. Real legal corpus fetchers (SSO/AGC) + lawyer spot-check.
+  2. Real T1 endpoint + evals on real NDAs; more starter playbooks.
+  3. Pre-pilot hardening: SCIM, email-domain verification, rate limiting on `/v1/auth/*`, pen test, cloud deployment (Terraform SG cell).
+- **Open threads:** CI jobs (web, e2e) still not run on GitHub. `style-src` allows inline styles. Domain claims are unverified. Eval scores remain synthetic.
+
 ## 2026-09-29 — P1 slice 2: review canvas web UI
 - **Done:** `apps/web` (Next.js 16, TS strict, Tailwind 4, TanStack Query): sign-in (dev token), matters list/create, matter home (upload, classification, playbook picker, start review, live progress), review canvas (document pane with tracked-change previews and missing-clause blocks, findings pane with filters, citation chips, sources drawer, Why-this-model, edit/reject-with-reason/defer/accept, citation override, undo, keyboard shortcuts, export gate bar, DOCX download), playbooks view; light/dark themes. API: `/v1/me`, `/v1/legal-units/{id}`, `/v1/reviews/{id}/routing`, `reset` disposition, `travo dev-token`. Tests: 99 Python, 17 vitest, 1 Playwright e2e (full lawyer flow incl. dark-mode check) via `scripts/e2e.sh`. CI jobs for web + e2e added (not yet run on GitHub).
 - **Decisions:** ADR-017.

@@ -81,3 +81,18 @@ GET   /v1/legal-units/{unit_id}        public-law unit for the sources panel (UR
 GET   /v1/reviews/{id}/routing         routing decisions for the review's document (members only)
 PATCH /v1/findings/{id}  action=reset  undo: clears the disposition (audited + telemetry)
 ```
+
+## 6. Added in P1 slice 3 (2026-09-29) — sign-in and admin
+Tables: `tenant_idps`, `idp_domains` (domain PK), `auth_sessions`; `users.idp_subject`.
+Functions: `idp_for_email_domain(domain)`, `idp_by_id(id)` (SECURITY DEFINER, ids only).
+```
+POST   /v1/auth/oidc/start      {email} → {idp_id, authorization_endpoint, client_id, scopes}
+POST   /v1/auth/oidc/callback   {idp_id, code, code_verifier, redirect_uri, nonce} → {token, expires_at, user}
+POST   /v1/auth/logout          revoke current session
+GET    /v1/admin/idp            PUT /v1/admin/idp {issuer, client_id, client_secret?, email_domains[], enabled}
+GET    /v1/admin/sessions       POST /v1/admin/sessions/{id}/revoke
+GET    /v1/admin/endpoints      model catalogue (no secrets)
+DELETE /v1/admin/provider-credentials/{provider}
+```
+Web BFF (Next.js route handlers): `GET /auth/login?email&next`, `GET /auth/callback`,
+`POST /auth/logout`, `POST /auth/dev` (dev only), `/api/*` → API with the session token.

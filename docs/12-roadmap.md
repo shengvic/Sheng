@@ -43,7 +43,8 @@ gantt
 - [x] Append-only audit log; admin audit/routing APIs
 - [x] Eval harness + 3 synthetic gold NDAs (SG, MY, VN bilingual)
 - [ ] Terraform SG cell (dev/staging)
-- [ ] Real SSO (OIDC provider, SCIM)
+- [x] Real SSO via OIDC (per-firm IdP) — P1 slice 3
+- [ ] SCIM provisioning
 - [ ] OpenTelemetry + Langfuse (in-cell)
 - [ ] Real T1 open-weight endpoint on Fireworks/Baseten (needs account + key; decide Q5/Q6)
 - [ ] 30 real annotated NDAs (SG/MY) replacing synthetic gold set
@@ -79,7 +80,8 @@ gantt
 - [x] Redline DOCX (Word tracked changes) + review memo DOCX; encrypted export storage
 - [x] Admin spend view (by matter, task, tier)
 - [x] Review canvas web UI: matters, matter home, review canvas, sources drawer, Why-this-model, export bar, playbooks view; keyboard-first; light/dark; Playwright e2e (slice 2)
-- [ ] Admin console UI (policy editor, BYO keys, spend), real OIDC sign-in
+- [x] Real OIDC sign-in per firm (PKCE, server-side sessions, revocation, BFF cookie, CSP, CSRF) and admin console UI (policy editor + dry-run, BYO keys, spend, audit, SSO + sessions) — slice 3
+- [ ] SCIM provisioning, email-domain verification, rate limiting on sign-in endpoints
 - [ ] OCR for scanned PDFs; signing-date extraction (law is checked "as of today")
 - [ ] SSE progress stream (polling only)
 - [ ] Security baseline + external pen test; design-partner onboarding

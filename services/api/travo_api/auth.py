@@ -1,4 +1,7 @@
-"""Bearer-token auth. HS256 for dev/tests; RS256 via OIDC JWKS when configured."""
+"""Bearer-token auth. Travo tokens are HS256, issued by the API itself: session tokens after
+SSO sign-in (carry `sid`, checked against `auth_sessions`), or dev tokens (no `sid`, only when
+`allow_dev_tokens`). The browser never holds either — the web BFF keeps it in an httpOnly
+cookie (ADR-018)."""
 
 from __future__ import annotations
 
@@ -6,7 +9,6 @@ import time
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import Any
 
 import jwt
@@ -17,6 +19,7 @@ from sqlalchemy.orm import Session
 from travo_api.config import get_settings
 from travo_api.db import tenant_session
 from travo_api.models import User
+from travo_api.sessions import session_is_live
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -26,6 +29,7 @@ class Actor:
     user: User
     tenant_id: str
     session: Session
+    session_id: uuid.UUID | None = None
 
     @property
     def user_id(self) -> uuid.UUID:
@@ -36,26 +40,11 @@ class Actor:
         return self.user.role == "admin"
 
 
-@lru_cache
-def _jwks_client(url: str) -> jwt.PyJWKClient:
-    return jwt.PyJWKClient(url)
-
-
 def decode_token(token: str) -> dict[str, object]:
     s = get_settings()
-    opts: Any = {"require": ["exp", "sub", "tid"]}
-    if s.oidc_jwks_url:
-        key = _jwks_client(s.oidc_jwks_url).get_signing_key_from_jwt(token).key
-        return jwt.decode(
-            token,
-            key,
-            algorithms=["RS256"],
-            audience=s.jwt_audience,
-            issuer=s.jwt_issuer,
-            options=opts,
-        )
     if not s.jwt_secret:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "auth not configured")
+    opts: Any = {"require": ["exp", "sub", "tid"]}
     return jwt.decode(
         token,
         s.jwt_secret,
@@ -89,13 +78,18 @@ def get_actor(
         claims = decode_token(creds.credentials)
         tenant_id = str(uuid.UUID(str(claims["tid"])))
         user_id = uuid.UUID(str(claims["sub"]))
+        sid = uuid.UUID(str(claims["sid"])) if "sid" in claims else None
     except (jwt.PyJWTError, ValueError, KeyError):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token") from None
+    if sid is None and not get_settings().allow_dev_tokens:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "dev tokens are disabled")
     with tenant_session(tenant_id) as session:
         user = session.get(User, user_id)  # RLS: only visible within its own tenant
         if user is None:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unknown user")
-        actor = Actor(user=user, tenant_id=tenant_id, session=session)
+        if sid is not None and not session_is_live(session, sid, user_id):
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "session expired or revoked")
+        actor = Actor(user=user, tenant_id=tenant_id, session=session, session_id=sid)
         request.state.actor = actor
         yield actor
 
