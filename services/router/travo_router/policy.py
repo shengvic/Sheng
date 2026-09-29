@@ -51,9 +51,9 @@ class Budgets(BaseModel):
 DEFAULT_RULES: dict[str, TaskRule] = {
     "classify": TaskRule(tier="T1"),
     "clause_extraction": TaskRule(tier="T1"),
-    "playbook_compare": TaskRule(tier="T1"),
+    "playbook_compare": TaskRule(tier="T1", escalate_to="T2"),
     "law_check": TaskRule(tier="T1", escalate_to="T2"),
-    "redline": TaskRule(tier="T1"),
+    "redline": TaskRule(tier="T1", escalate_to="T2"),
     "memo": TaskRule(tier="T1", escalate_to="T2"),
     "embed": TaskRule(tier="T0"),
     "rerank": TaskRule(tier="T0"),

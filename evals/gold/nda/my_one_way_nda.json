@@ -4,6 +4,20 @@
   "languages": [
     "en"
   ],
+  "playbook": "nda_my",
+  "expected_findings": {
+    "confidentiality_core": "standard",
+    "term_length": "missing",
+    "exclusions_present": "missing",
+    "permitted_disclosure_present": "missing",
+    "return_destroy": "missing",
+    "governing_law_my": "standard",
+    "forum": "missing",
+    "liability_not_unlimited": "standard",
+    "liability_cap_floor": "non_standard",
+    "non_solicit_max": "standard",
+    "personal_data": "missing"
+  },
   "clauses": [
     {
       "heading": "Preamble",

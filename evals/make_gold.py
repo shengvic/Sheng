@@ -16,6 +16,17 @@ OUT = Path(__file__).parent / "gold" / "nda"
 DOCS: dict[str, dict] = {
     "sg_mutual_nda": {
         "meta": {"contract_type": "NDA", "governing_law": "SG", "languages": ["en"]},
+        "playbook": "nda_sg",
+        "expected_findings": {
+            "confidentiality_core": "standard",
+            "term_length": "fallback",
+            "exclusions_present": "standard",
+            "permitted_disclosure_present": "standard",
+            "return_destroy": "standard",
+            "governing_law_sg": "standard",
+            "forum": "standard",
+            "personal_data": "standard",
+        },
         "title": "MUTUAL NON-DISCLOSURE AGREEMENT",
         "preamble": [
             'This Agreement is made between Lion City Robotics Pte. Ltd. ("Company A") and '
@@ -50,12 +61,12 @@ DOCS: dict[str, dict] = {
             ),
             (
                 "7. Term and Termination",
-                "This Agreement continues for 3 years from the Effective Date.",
+                "This Agreement continues for 2 years from the Effective Date.",
                 "term_and_termination",
             ),
             (
                 "8. Remedies",
-                "Damages may be inadequate and injunctive relief may be sought.",
+                "Damages may be inadequate and injunctive relief may be sought. The Recipient shall pay liquidated damages of S$50,000 for each breach.",
                 "remedies",
             ),
             (
@@ -87,6 +98,20 @@ DOCS: dict[str, dict] = {
     },
     "my_one_way_nda": {
         "meta": {"contract_type": "NDA", "governing_law": "MY", "languages": ["en"]},
+        "playbook": "nda_my",
+        "expected_findings": {
+            "confidentiality_core": "standard",
+            "term_length": "missing",
+            "exclusions_present": "missing",
+            "permitted_disclosure_present": "missing",
+            "return_destroy": "missing",
+            "governing_law_my": "standard",
+            "forum": "missing",
+            "liability_not_unlimited": "standard",
+            "liability_cap_floor": "non_standard",
+            "non_solicit_max": "standard",
+            "personal_data": "missing",
+        },
         "title": "CONFIDENTIALITY AGREEMENT",
         "preamble": [
             'Between Petaling Logistics Sdn. Bhd. (the "Discloser") and Klang Freight Sdn. Bhd. (the "Recipient").',
@@ -202,7 +227,17 @@ def main() -> None:
             )
         doc.save(OUT / f"{name}.docx")
         (OUT / f"{name}.json").write_text(
-            json.dumps({**spec["meta"], "clauses": labels}, ensure_ascii=False, indent=2) + "\n"
+            json.dumps(
+                {
+                    **spec["meta"],
+                    "playbook": spec.get("playbook"),
+                    "expected_findings": spec.get("expected_findings", {}),
+                    "clauses": labels,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n"
         )
         print(f"wrote {name}")
 

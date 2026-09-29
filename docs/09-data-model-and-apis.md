@@ -55,3 +55,21 @@ GET    /v1/insights/learning               "Travo is learning" digest
 - **Retrieval API:** `POST /retrieve {query, jurisdictions, as_of_date, scopes:[legal, firm, matter], matter_id, k}` → evidence pack.
 - **Validator API:** `POST /validate {text_with_cites, evidence_pack_id}` → claims with verdicts.
 - **Events** (Kafka/NATS or Postgres outbox → queue): `document.uploaded`, `review.step.completed`, `finding.dispositioned`, `routing.decision`, `escalation.completed`.
+
+## 4. Added in P1 slice 1 (2026-09-29)
+Tables: `playbooks`, `review_runs`, `review_steps`, `findings`, `citations`, `telemetry_events`
+(append-only), `exports`, shared `legal_sources` / `legal_units`; SQL function
+`claim_review_run(worker, lease_s, max_attempts)`.
+```
+POST  /v1/documents/{id}/reviews        {playbook_key?} → 202 ReviewRun (queued)
+GET   /v1/matters/{id}/reviews
+GET   /v1/reviews/{id}                  run + steps + summary (memo)
+GET   /v1/reviews/{id}/findings         findings with embedded citations (?kind=playbook|law)
+GET   /v1/reviews/{id}/export-gate      {open, blocking[]}
+POST  /v1/reviews/{id}/exports          {format: redline_docx|memo_docx} → 201 | 409 {blocking}
+GET   /v1/exports/{id}                  DOCX download
+PATCH /v1/findings/{id}                 {action: accept|edit|reject|defer, edited_text?, reason_code?, note?}
+POST  /v1/citations/{id}/override       {reason} (partner / KM / admin)
+GET   /v1/playbooks  GET /v1/playbooks/{key}  POST /v1/playbooks {yaml | from_starter, key?}
+GET   /v1/admin/spend
+```

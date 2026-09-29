@@ -122,3 +122,14 @@ class DbRouterContext:
         self.session.flush()
         self.decision_ids.append(row.id)
         return str(row.id)
+
+
+def cost_of(session: Session, decision_ids: list[uuid.UUID]) -> float:
+    if not decision_ids:
+        return 0.0
+    total = session.scalar(
+        select(func.coalesce(func.sum(RoutingDecision.cost_usd), 0)).where(
+            RoutingDecision.id.in_(decision_ids)
+        )
+    )
+    return float(total or 0)

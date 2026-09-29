@@ -25,3 +25,9 @@
 | **Golden set** | Expert-labelled evaluation data used as release gates. |
 | **ZDR** | Zero data retention agreement with a model provider. |
 | **RLS** | Row-level security in Postgres, enforcing tenant isolation. |
+| **Review run** | One durable execution of the review workflow over a document with a pinned playbook version. |
+| **Step** | A named, checkpointed unit of a review run (`prepare`, `compare`, `lawcheck`, `redline`, `memo`). |
+| **Jurisdiction pack** (as built) | YAML of law-check triggers and retrieval queries per jurisdiction; contains no legal text. |
+| **Fixture corpus** | Synthetic legal units used in tests, titled "FIXTURE — not law". |
+| **Few-shot memory** | Reusing the firm's accepted/edited redlines as examples, limited to matters the user may see. |
+| **needs_human** | Finding status when no permitted model could produce a validated answer. |

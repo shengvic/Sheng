@@ -127,6 +127,9 @@ def database(admin_url: str, tmp_path_factory: pytest.TempPathFactory) -> Iterat
             c.execute(text(f"CREATE ROLE travo_api LOGIN PASSWORD '{APP_ROLE_PASSWORD}'"))
         c.execute(text("GRANT travo_app TO travo_api"))
     owner.dispose()
+    from travo_api.cli import ingest_legal
+
+    ingest_legal(str(ROOT / "tests" / "fixtures" / "legal_fixture.jsonl"))
     yield
     _clear_caches()
     with root_engine.connect() as c:
@@ -215,3 +218,28 @@ def create_matter(client, tenant: TenantFixture, who: str = "admin", **overrides
     r = client.post("/v1/matters", json=body, headers=tenant.headers(who))
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def run_reviews() -> int:
+    from travo_api.reviews import runner
+
+    return runner().drain("test-worker")
+
+
+def review_document(
+    client,
+    tenant: TenantFixture,
+    name: str = "sg_mutual_nda",
+    who: str = "admin",
+    matter: dict | None = None,
+) -> tuple[dict, dict, dict]:
+    """Upload + start review + run worker. Returns (matter, document, review)."""
+    matter = matter or create_matter(
+        client, tenant, who=who, jurisdictions=["SG"] if name.startswith("sg") else ["MY"]
+    )
+    doc = upload(client, tenant, matter["id"], name, who=who).json()
+    r = client.post(f"/v1/documents/{doc['id']}/reviews", json={}, headers=tenant.headers(who))
+    assert r.status_code == 202, r.text
+    run_reviews()
+    review = client.get(f"/v1/reviews/{r.json()['id']}", headers=tenant.headers(who)).json()
+    return matter, doc, review

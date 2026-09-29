@@ -5,6 +5,8 @@
     "vi",
     "en"
   ],
+  "playbook": null,
+  "expected_findings": {},
   "clauses": [
     {
       "heading": "Preamble",

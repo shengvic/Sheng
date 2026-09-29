@@ -1,7 +1,7 @@
 PY_PATH := services/api:services/rag:services/router:services/agents:.
 export PYTHONPATH := $(PY_PATH)
 
-.PHONY: install lint fmt typecheck test eval db-up db-migrate dev check
+.PHONY: install lint fmt typecheck test eval db-up db-migrate dev check worker ingest-legal
 
 install:
 	uv sync
@@ -34,3 +34,9 @@ db-migrate:
 
 dev:
 	uv run uvicorn travo_api.main:app --reload --port 8000
+
+worker:
+	uv run python -m travo_api.cli worker
+
+ingest-legal:
+	uv run python -m travo_api.cli ingest-legal $(FILE)

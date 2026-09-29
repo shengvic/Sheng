@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -190,4 +191,155 @@ class AuditEvent(Base):
     matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     result: Mapped[str] = mapped_column(String(16))
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = _created()
+
+
+class LegalSource(Base):
+    __tablename__ = "legal_sources"
+    id: Mapped[str] = mapped_column(String(160), primary_key=True)
+    jurisdiction: Mapped[str] = mapped_column(String(8))
+    instrument_type: Mapped[str] = mapped_column(String(40))
+    number: Mapped[str | None] = mapped_column(String(80))
+    title: Mapped[str] = mapped_column(Text)
+    issuing_body: Mapped[str | None] = mapped_column(Text)
+    language: Mapped[str] = mapped_column(String(8), default="en")
+    official_url: Mapped[str | None] = mapped_column(Text)
+    is_fixture: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class LegalUnit(Base):
+    __tablename__ = "legal_units"
+    id: Mapped[str] = mapped_column(String(240), primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(160), ForeignKey("legal_sources.id"))
+    unit_path: Mapped[str] = mapped_column(String(160))
+    heading: Mapped[str] = mapped_column(Text, default="")
+    text: Mapped[str] = mapped_column(Text)
+    effective_from: Mapped[date | None] = mapped_column(Date)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(16), default="in_force")
+    version_hash: Mapped[str] = mapped_column(String(64))
+
+
+class PlaybookRow(Base):
+    __tablename__ = "playbooks"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    key: Mapped[str] = mapped_column(String(80))
+    version: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(200))
+    contract_types: Mapped[list[str]] = mapped_column(ARRAY(String(32)), default=list)
+    governing_laws: Mapped[list[str]] = mapped_column(ARRAY(String(8)), default=list)
+    spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(16), default="active")
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = _created()
+
+
+class ReviewRun(Base):
+    __tablename__ = "review_runs"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    matter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    playbook_key: Mapped[str] = mapped_column(String(80))
+    playbook_version: Mapped[int] = mapped_column(Integer)
+    playbook_source: Mapped[str] = mapped_column(String(10))
+    playbook_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    initiated_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    lease_owner: Mapped[str | None] = mapped_column(String(80))
+    lease_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    not_before: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6), default=0)
+    summary: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = _created()
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ReviewStep(Base):
+    __tablename__ = "review_steps"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    idx: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    output: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Finding(Base):
+    __tablename__ = "findings"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    matter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    clause_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    clause_key: Mapped[str] = mapped_column(String(64))
+    rule_key: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(10))
+    classification: Mapped[str] = mapped_column(String(16))
+    severity: Mapped[str] = mapped_column(String(8))
+    summary: Mapped[str] = mapped_column(Text)
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    suggested_redline: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[float] = mapped_column(Float)
+    model_tier: Mapped[str | None] = mapped_column(String(4))
+    escalated: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(16), default="needs_review")
+    disposition: Mapped[str | None] = mapped_column(String(10))
+    edited_text: Mapped[str | None] = mapped_column(Text)
+    reason_code: Mapped[str | None] = mapped_column(String(40))
+    note: Mapped[str | None] = mapped_column(Text)
+    disposition_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    disposition_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _created()
+
+
+class Citation(Base):
+    __tablename__ = "citations"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    matter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    finding_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    claim_text: Mapped[str] = mapped_column(Text)
+    source_unit_id: Mapped[str | None] = mapped_column(String(240))
+    pinpoint: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16))
+    score: Mapped[float] = mapped_column(Float, default=0.0)
+    checker: Mapped[str] = mapped_column(String(128))
+    override_reason: Mapped[str | None] = mapped_column(Text)
+    overridden_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = _created()
+
+
+class TelemetryEvent(Base):
+    __tablename__ = "telemetry_events"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    event_type: Mapped[str] = mapped_column(String(48))
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    subject_id: Mapped[str | None] = mapped_column(String(64))
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = _created()
+
+
+class Export(Base):
+    __tablename__ = "exports"
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = _tenant_fk()
+    matter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    format: Mapped[str] = mapped_column(String(16))
+    filename: Mapped[str] = mapped_column(String(300))
+    storage_ref: Mapped[str] = mapped_column(String(300))
+    sha256: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     created_at: Mapped[datetime] = _created()

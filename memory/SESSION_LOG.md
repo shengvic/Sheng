@@ -12,6 +12,16 @@ Template:
 
 ---
 
+## 2026-09-29 — P1 slice 1: backend review engine
+- **Done:** Durable Postgres review runner (resume/retry/backoff/leases; cross-tenant claim via one SECURITY DEFINER function). Starter playbooks NDA SG/MY with machine-checkable rules; firm playbook versioning API. Agents: playbook compare, law check (jurisdiction packs SG/MY), redline (few-shot from firm edits, wall-scoped), memo; prompts moved to versioned files. Legal index + JSONL ingestion CLI, full-text retrieval with in-force filters, per-claim citation validator (existence, in-force, quote fidelity, entailment via router). Escalation T1→T2 on low confidence / failed citations; conflict-blocked → needs_human. Findings dispositions with reason codes, citation overrides, telemetry. Export gate; redline DOCX with Word tracked changes; memo DOCX. Admin spend view. 94 tests; ruff + mypy clean; live smoke (server + `travo worker` + curl) passed.
+- **Decisions:** ADR-013..016.
+- **Next:**
+  1. Review canvas web UI (Next.js) on the new API — next slice per user's choice.
+  2. Real SG/MY legal corpus: write SSO/AGC fetchers and run ingestion from an environment with access; lawyer spot-check.
+  3. Real T1 endpoint + evals on real NDAs (Q5/Q6); more starter playbooks (MSA, SaaS/DPA, distribution).
+  4. pgvector dense retrieval; OCR; signing-date extraction; SSE progress.
+- **Open threads:** Eval scores (100%) are on synthetic gold docs written alongside the rules — not a quality claim. BYPASSRLS role creation on managed Postgres `[verify]`. Law is checked "as of today" until signing dates are extracted.
+
 ## 2026-09-29 — P0 foundations: first implementation slice
 - **Done:** Modular monolith scaffold (uv, Makefile, CI, docker-compose). Postgres schema + RLS on all tenant tables with a non-owner app role; composite FKs keep rows within a tenant. Dev JWT/OIDC auth; ethical walls (admins included, 404 + audit on denial). Envelope-encrypted document storage and BYO key vault. Router v0 (policy engine, vendor/host conflict rules, residency, BYO/proxy, budgets, escalation, fallback, decision log, dry-run API). Parsing (DOCX/PDF/TXT), language ID (en/vi/id/ms heuristic), clause segmentation (incl. Điều/Pasal/Fasal). Classify + clause-extraction agents via router; `travo_rules` T0 model. Append-only audit + routing logs. Eval harness + 3 synthetic gold NDAs. 64 tests; ruff + mypy clean; live smoke test (uvicorn + curl) passed.
 - **Decisions:** ADR-008..012.

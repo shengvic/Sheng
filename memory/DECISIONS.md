@@ -68,3 +68,24 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
 - **Date:** 2026-09-29 · **Status:** Accepted
 - **Decision:** When a task is escalated, endpoints below the escalation tier are excluded (`below_escalation_tier`); otherwise fallback goes preferred tier → lower tiers → higher tiers allowed by the rule.
 - **Consequences:** Escalations fail loudly (to human review) rather than silently reusing a weaker model.
+
+## ADR-013 — Postgres-backed durable review runs (Temporal deferred)
+- **Date:** 2026-09-29 · **Status:** Accepted
+- **Context:** Reviews are multi-step and must survive crashes; Temporal needs infra not available in dev/CI yet.
+- **Decision:** `review_runs` + `review_steps`; each step commits its outputs and `completed` marker atomically; resume skips completed steps; retries with backoff up to `max_attempts`; leases with row locks. Workers claim runs across tenants only via `claim_review_run()` — a `SECURITY DEFINER` function owned by `travo_claimer` (NOLOGIN, BYPASSRLS, rights on `review_runs` only) that returns ids; all work then runs in a tenant-scoped session under RLS. Dev/tests can run reviews inline via an after-commit hook (`TRAVO_INLINE_REVIEWS`).
+- **Consequences:** No new infra. Creating a BYPASSRLS role needs a superuser migration role — check managed Postgres support `[verify]`. Swap to Temporal behind `WorkflowRunner` later.
+
+## ADR-014 — Shared legal index; fixtures only until real ingestion
+- **Date:** 2026-09-29 · **Status:** Accepted
+- **Decision:** Public law lives in shared `legal_sources`/`legal_units` (read-only to the app, no tenant data). Test fixtures are titled "FIXTURE — not law". Statute text is never transcribed from memory; real SG/MY units come from official portals via the JSONL ingestion CLI.
+- **Consequences:** Law checks in any deployment without an ingested corpus produce `no_sources` → human review, never invented law.
+
+## ADR-015 — Few-shot memory respects ethical walls
+- **Date:** 2026-09-29 · **Status:** Accepted
+- **Decision:** Redline few-shot examples come only from accepted/edited findings in matters where the run's initiator is a `member`. Firm-wide precedent sharing will require explicit KM publication (clause bank), not implicit reuse.
+- **Consequences:** Learning is slower across teams but cannot leak walled wording.
+
+## ADR-016 — Export gate semantics
+- **Date:** 2026-09-29 · **Status:** Accepted
+- **Decision:** Export requires a completed run, every non-`info` finding dispositioned (defer blocks), and every citation on a non-rejected finding `supported` or overridden with a reason by a partner/KM/admin. `info` (standard) findings never block.
+- **Consequences:** Lawyers can clear low-value checks quickly while unsupported law cannot reach a client document silently.

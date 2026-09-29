@@ -6,3 +6,4 @@ def test_gold_nda_eval_gate():
     scores = evaluate()
     assert scores["classification_accuracy"] == 1.0
     assert scores["clause_f1"] >= 0.9
+    assert scores["finding_accuracy"] >= 0.9

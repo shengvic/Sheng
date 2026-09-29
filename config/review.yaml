@@ -1,0 +1,10 @@
+# Review engine settings (docs/05, ADR-013).
+steps: [prepare, compare, lawcheck, redline, memo]
+max_attempts: 3
+lease_seconds: 300
+retry_backoff_seconds: [5, 30, 120]
+# Minimum confidence before an agent escalates to a higher tier (docs/03 §5).
+thresholds:
+  playbook_compare: 0.5
+# Few-shot: how many prior firm redlines to offer per clause key.
+few_shot_examples: 3

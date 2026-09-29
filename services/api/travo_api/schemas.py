@@ -129,3 +129,126 @@ class AuditOut(BaseModel):
     result: str
     details: dict[str, Any]
     created_at: datetime
+
+
+class ReviewStart(BaseModel):
+    playbook_key: str | None = Field(default=None, max_length=80)
+
+
+class ReviewStepOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    idx: int
+    name: str
+    status: str
+    attempts: int
+    error: str | None
+    output: dict[str, Any]
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    matter_id: uuid.UUID
+    document_id: uuid.UUID
+    playbook_key: str
+    playbook_version: int
+    playbook_source: str
+    status: str
+    attempts: int
+    error: str | None
+    cost_usd: float
+    summary: dict[str, Any]
+    created_at: datetime
+    finished_at: datetime | None
+    steps: list[ReviewStepOut] = Field(default_factory=list)
+
+
+class CitationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    claim_text: str
+    source_unit_id: str | None
+    pinpoint: str | None
+    status: str
+    score: float
+    checker: str
+    override_reason: str | None
+
+
+class FindingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    clause_id: uuid.UUID | None
+    clause_key: str
+    rule_key: str
+    kind: str
+    classification: str
+    severity: str
+    summary: str
+    rationale: str
+    suggested_redline: str | None
+    confidence: float
+    model_tier: str | None
+    escalated: bool
+    status: str
+    disposition: str | None
+    edited_text: str | None
+    reason_code: str | None
+    note: str | None
+    citations: list[CitationOut] = Field(default_factory=list)
+
+
+REASON_CODES = (
+    "wrong_clause_type",
+    "playbook_misapplied",
+    "law_incorrect",
+    "law_outdated",
+    "too_aggressive",
+    "too_lenient",
+    "drafting_style",
+    "missing_issue",
+    "not_relevant_to_client",
+    "other",
+)
+
+
+class DispositionIn(BaseModel):
+    action: Literal["accept", "edit", "reject", "defer"]
+    edited_text: str | None = Field(default=None, max_length=20_000)
+    reason_code: Literal[REASON_CODES] | None = None  # type: ignore[valid-type]
+    note: str | None = Field(default=None, max_length=4000)
+
+
+class OverrideIn(BaseModel):
+    reason: str = Field(min_length=10, max_length=2000)
+
+
+class ExportIn(BaseModel):
+    format: Literal["redline_docx", "memo_docx"]
+
+
+class ExportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    run_id: uuid.UUID
+    format: str
+    filename: str
+    sha256: str
+    created_at: datetime
+
+
+class PlaybookIn(BaseModel):
+    yaml: str | None = Field(default=None, max_length=200_000)
+    from_starter: str | None = Field(default=None, max_length=80)
+    key: str | None = Field(default=None, pattern=r"^[a-z0-9_]{2,80}$")
+
+
+class PlaybookOut(BaseModel):
+    key: str
+    version: int
+    name: str
+    source: Literal["tenant", "starter"]
+    contract_types: list[str]
+    governing_laws: list[str]
+    rules: int
+    spec: dict[str, Any] | None = None

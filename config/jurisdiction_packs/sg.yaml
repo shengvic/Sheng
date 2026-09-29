@@ -1,0 +1,21 @@
+# Jurisdiction pack: triggers and retrieval queries only. Legal text comes from the index.
+jurisdiction: SG
+rules:
+  - key: agreed_damages
+    clause_keys: [remedies, limitation_of_liability, term_and_termination]
+    triggers: [liquidated damages, penalty, agreed damages]
+    query: liquidated damages penalty genuine pre-estimate loss enforceability
+    issue: Check whether the agreed damages provision is enforceable or an unenforceable penalty
+    severity: medium
+  - key: exclusion_of_liability
+    clause_keys: [limitation_of_liability, no_warranty]
+    triggers: [exclude, exclusion, not be liable, shall not exceed]
+    query: exclusion limitation liability reasonableness contract term
+    issue: Check whether the exclusion or limitation of liability satisfies the reasonableness requirement
+    severity: medium
+  - key: personal_data_transfer
+    clause_keys: [data_protection]
+    triggers: []
+    query: personal data transfer outside country comparable protection organisation
+    issue: Check that personal data obligations cover transfers of personal data outside Singapore
+    severity: low

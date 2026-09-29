@@ -86,3 +86,16 @@ flowchart TD
 | Citation precision (supported/total shown as ✅) | ≥ 95% | ≥ 98% |
 | Unsupported claims reaching export without override | 0 | 0 |
 | Retrieval recall@10 on golden legal questions | ≥ 85% | ≥ 92% |
+
+## 8. As built — P1 slice 1 (2026-09-29)
+- Shared tables `legal_sources` / `legal_units` (no tenant data; app role read-only; loaded by
+  `travo_api.cli ingest-legal <jsonl>` on the owner connection). Format: `travo_rag/legal_index.py`.
+- Retrieval: Postgres full-text (`simple` config, GIN) with jurisdiction + in-force filters
+  (status, effective_from/to at the as-of date), lexical-overlap rerank. `DenseRetriever` hook
+  and reciprocal-rank fusion are in place for pgvector.
+- Citation markers: `[[src:<unit_id>]]`, unit id = `<source_id>#<unit_path>`. Statuses:
+  `supported`, `partial`, `contradicted`, `not_found`, `uncited`, `invalid_source`,
+  `not_in_force`, `misquoted`. Only `supported` passes.
+- **Corpus status:** only the test fixture corpus exists (`tests/fixtures/legal_fixture.jsonl`,
+  every source titled "FIXTURE — not law"). SG/MY portals were unreachable from the dev
+  environment; no statute text was transcribed from memory (ADR-014).

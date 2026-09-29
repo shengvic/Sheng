@@ -8,10 +8,11 @@ legal sources with per-claim citation checks, and escalates hard sub-tasks to
 frontier models through a **model-agnostic, conflict-aware router**.
 
 ## Current phase
-- **Phase:** P0 — foundations in progress. Local-testable slice done (tenancy + RLS,
-  ethical walls, encrypted storage, router v0, classify/extract agents, audit, evals).
-- **Next step:** remaining P0 items in `docs/12-roadmap.md` §P0 checklist (cloud infra,
-  real SSO, Temporal, Langfuse/OTel, real T1 endpoint, 30 real NDAs).
+- **Phase:** P1 — slice 1 (backend review engine) done: durable review runs, playbooks,
+  compare/law-check/redline/memo agents, legal index + citation validator, escalation,
+  dispositions, export gate, DOCX exports. P0 infra items still open.
+- **Next step:** P1 slice 2 = review canvas web UI; then real legal corpus ingestion. See
+  `docs/12-roadmap.md` §P1 checklist.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -50,13 +51,17 @@ frontier models through a **model-agnostic, conflict-aware router**.
 Modular monolith in one uv project (ADR-008): packages import each other in-process and
 can be split into deployables later.
 ```
-services/api      travo_api    FastAPI app, auth, walls, audit, storage, admin, migrations
+services/api      travo_api    FastAPI app, auth, walls, audit, storage, admin, migrations,
+                               workflows.py (durable runner), reviews.py (steps), exports.py
 services/router   travo_router Task descriptor, policy engine, provider adapters, Router
-services/rag      travo_rag    parsing (DOCX/PDF/TXT), language ID, clause segmentation
-services/agents   travo_agents taxonomy, classify/extract agents, travo_rules T0 model, pipeline
-config/           endpoints.yaml (model catalogue), default_policy.yaml
+services/rag      travo_rag    parsing, language ID, segmentation, legal_index, retrieval,
+                               citations (per-claim validator)
+services/agents   travo_agents taxonomy, classify/extract/compare/lawcheck/redline/memo agents,
+                               playbooks + checks, prompts/<task>/v1.md, travo_rules T0 model
+config/           endpoints.yaml, default_policy.yaml, review.yaml, playbooks/*.yaml,
+                  jurisdiction_packs/*.yaml
 evals/            gold/nda (synthetic), harness.py, make_gold.py
-tests/            pytest; spins up an ephemeral Postgres 16 automatically
+tests/            pytest; ephemeral Postgres 16; fixtures/legal_fixture.jsonl (NOT real law)
 scripts/          create_app_role.sql
 ```
 Not yet created (planned): `apps/web`, `apps/word-addin`, `services/flywheel`,
@@ -68,6 +73,8 @@ make install      # uv sync
 make check        # ruff + mypy + pytest (tests start their own Postgres)
 make eval         # clause/classification scores on gold NDAs
 make db-up db-migrate dev   # local API on :8000 (needs Docker + .env from .env.example)
+make worker       # process queued review runs (or TRAVO_INLINE_REVIEWS=true for dev)
+make ingest-legal FILE=units.jsonl   # load legal units into the shared index (owner conn)
 PYTHONPATH=services/api:services/rag:services/router:services/agents \
   uv run python -m travo_api.cli bootstrap-tenant "Firm" admin@firm.test   # then mint-token
 ```
@@ -80,3 +87,9 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
 - `audit_events` and `routing_decisions` are append-only (trigger + grants).
 - Endpoint `provider` = model vendor; `via` = aggregator/host. Deny/allow lists and matter
   conflicts apply to both. `travo` (first party) is exempt from allowlists only.
+- Review workers touch other tenants only through `claim_review_run()` (returns ids); step work
+  runs in `tenant_session()`. A step writes its rows and its `completed` marker in one
+  transaction — keep steps idempotent under retry.
+- `telemetry_events` is append-only too. Legal text only enters via `ingest-legal`; never write
+  statute text by hand (ADR-014). Fixture units are titled "FIXTURE — not law".
+- Few-shot examples are filtered to matters the initiator is a member of (ADR-015).

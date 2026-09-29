@@ -67,14 +67,48 @@ def main() -> None:
     t.add_argument("tenant_id")
     t.add_argument("user_id")
     t.add_argument("--ttl", type=int, default=3600)
+    w = sub.add_parser("worker")
+    w.add_argument("--once", action="store_true", help="drain the queue once and exit")
+    w.add_argument("--poll", type=float, default=2.0)
+    i = sub.add_parser("ingest-legal")
+    i.add_argument("path")
     args = p.parse_args()
     if args.cmd == "bootstrap-tenant":
         tid, uid = bootstrap_tenant(args.name, args.admin_email, args.region)
         print(f"tenant_id={tid}\nadmin_user_id={uid}")
     elif args.cmd == "add-user":
         print(add_user(args.tenant_id, args.email, args.role))
-    else:
+    elif args.cmd == "mint-token":
         print(mint_dev_token(args.user_id, args.tenant_id, args.ttl))
+    elif args.cmd == "worker":
+        run_worker(args.once, args.poll)
+    else:
+        print(f"loaded {ingest_legal(args.path)} legal units")
+
+
+def run_worker(once: bool, poll: float) -> None:
+    import time
+
+    from travo_api.reviews import runner
+    from travo_api.workflows import worker_id
+
+    wid, r = worker_id(), runner()
+    print(f"worker {wid} started")
+    while True:
+        n = r.drain(wid)
+        if n:
+            print(f"processed {n} review run(s)")
+        if once:
+            return
+        time.sleep(poll)
+
+
+def ingest_legal(path: str) -> int:
+    from travo_rag.legal_index import read_jsonl, upsert_units
+
+    units = read_jsonl(path)
+    with get_admin_engine().begin() as conn:
+        return upsert_units(conn, units)
 
 
 if __name__ == "__main__":

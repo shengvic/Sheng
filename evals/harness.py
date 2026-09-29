@@ -12,7 +12,9 @@ from collections import Counter
 from pathlib import Path
 
 from travo_agents.base import AgentContext
+from travo_agents.compare import compare
 from travo_agents.pipeline import run_pipeline
+from travo_agents.playbooks import load_starter_playbooks
 from travo_agents.rules_model import RulesProvider
 from travo_rag.parsing import DOCX_MIME, parse
 from travo_router import EndpointRegistry, ModelPolicy, Router
@@ -59,6 +61,8 @@ def evaluate() -> dict[str, float]:
     fp: Counter[str] = Counter()
     fn: Counter[str] = Counter()
     meta_ok = meta_total = 0
+    books = load_starter_playbooks(ROOT / "config" / "playbooks")
+    finding_ok = finding_total = 0
     for gold_path in sorted(GOLD.glob("*.json")):
         gold = json.loads(gold_path.read_text())
         blocks = parse(gold_path.with_suffix(".docx").read_bytes(), DOCX_MIME)
@@ -88,6 +92,23 @@ def evaluate() -> dict[str, float]:
             f"  {gold_path.stem}: {sum(p == e for p, e in zip(predicted, expected, strict=False))}"
             f"/{len(expected)} clauses correct"
         )
+        expected_findings = gold.get("expected_findings") or {}
+        if gold.get("playbook") and expected_findings:
+            clauses = [
+                {"i": c.index, "key": c.key, "heading": c.heading, "text": c.text}
+                for c in result.clauses
+            ]
+            got = {
+                d.rule_key: d.classification for d in compare(ctx, books[gold["playbook"]], clauses)
+            }
+            for rule_key, cls in expected_findings.items():
+                finding_total += 1
+                if got.get(rule_key) == cls:
+                    finding_ok += 1
+                else:
+                    print(
+                        f"  ! {gold_path.stem}: {rule_key} expected {cls}, got {got.get(rule_key)}"
+                    )
     t, f_p, f_n = sum(tp.values()), sum(fp.values()), sum(fn.values())
     precision = t / (t + f_p) if t + f_p else 0.0
     recall = t / (t + f_n) if t + f_n else 0.0
@@ -97,6 +118,7 @@ def evaluate() -> dict[str, float]:
         "clause_recall": recall,
         "clause_f1": f1,
         "classification_accuracy": meta_ok / meta_total if meta_total else 0.0,
+        "finding_accuracy": finding_ok / finding_total if finding_total else 0.0,
     }
     for k, v in scores.items():
         print(f"{k:>24}: {v:.3f}")

@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     storage_dir: Path = ROOT / ".data" / "objects"
     endpoints_file: Path = ROOT / "config" / "endpoints.yaml"
     default_policy_file: Path = ROOT / "config" / "default_policy.yaml"
+    playbooks_dir: Path = ROOT / "config" / "playbooks"
+    jurisdiction_packs_dir: Path = ROOT / "config" / "jurisdiction_packs"
+    review_config_file: Path = ROOT / "config" / "review.yaml"
+    # Run reviews in the request process right after enqueueing (dev/tests). Production uses
+    # `travo worker`.
+    inline_reviews: bool = False
     region_cell: str = "SG"
     max_upload_bytes: int = 25 * 1024 * 1024
 

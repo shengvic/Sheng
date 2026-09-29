@@ -133,3 +133,26 @@ def list_audit(
     if matter_id:
         q = q.where(AuditEvent.matter_id == matter_id)
     return list(actor.session.scalars(q))
+
+
+@router.get("/spend")
+def spend(actor: Actor = Depends(require_admin)) -> dict[str, object]:
+    """Cost per matter, per task type and tier share (docs/08 §3.5)."""
+    s = actor.session
+
+    def grouped(col):  # type: ignore[no-untyped-def]
+        rows = s.execute(
+            select(
+                col, func.coalesce(func.sum(RoutingDecision.cost_usd), 0), func.count()
+            ).group_by(col)
+        ).all()
+        return [
+            {"key": str(k) if k is not None else None, "cost_usd": float(c), "calls": int(n)}
+            for k, c, n in rows
+        ]
+
+    return {
+        "by_matter": grouped(RoutingDecision.matter_id),
+        "by_task": grouped(RoutingDecision.task_type),
+        "by_tier": grouped(RoutingDecision.chosen_tier),
+    }

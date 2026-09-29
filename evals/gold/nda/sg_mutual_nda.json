@@ -4,6 +4,17 @@
   "languages": [
     "en"
   ],
+  "playbook": "nda_sg",
+  "expected_findings": {
+    "confidentiality_core": "standard",
+    "term_length": "fallback",
+    "exclusions_present": "standard",
+    "permitted_disclosure_present": "standard",
+    "return_destroy": "standard",
+    "governing_law_sg": "standard",
+    "forum": "standard",
+    "personal_data": "standard"
+  },
   "clauses": [
     {
       "heading": "Preamble",

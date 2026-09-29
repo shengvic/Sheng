@@ -51,7 +51,7 @@ gantt
 
 ## P1 — Contract Review MVP, SG/MY English (weeks 6–14)
 **Goal:** design partners use Travo on real (non-critical) matters.
-- `ContractReviewWorkflow` on Temporal with all agents from [05](05-contract-review-workflow.md).
+- `ContractReviewWorkflow` (durable runner; Temporal later — ADR-013) with all agents from [05](05-contract-review-workflow.md).
 - Starter playbooks: NDA, MSA, SaaS/DPA, distribution (SG, MY).
 - Legal RAG: SG + MY public primary law, hybrid search + rerank; Citation Validator v1 + export gate.
 - Review canvas UI, findings dispositions with reason codes, redline DOCX + memo export.
@@ -62,6 +62,26 @@ gantt
 - **2–3 design-partner firms** in SG/MY (free pilot → paid conversion terms agreed upfront).
 
 **Exit criteria:** PRD P1 metrics ([01](01-product-vision-and-prd.md) §6) met on golden sets; ≥ 100 real contracts reviewed by partners; finding acceptance ≥ 60% (→ 70% by P2).
+
+**P1 checklist** (updated 2026-09-29; slice 1 = backend review engine)
+- [x] Durable review runs: Postgres step runner (checkpointed steps, retries with backoff, leases, cross-tenant claim via one `SECURITY DEFINER` function) — ADR-013. Temporal deferred.
+- [x] Starter playbooks with machine-checkable rules: NDA SG, NDA MY; firm playbooks versioned via API (clone starter / YAML)
+- [ ] Starter playbooks: MSA, SaaS/DPA, distribution
+- [x] Playbook compare agent (standard / fallback / non-standard / missing, severity)
+- [x] Law-check agent driven by jurisdiction packs (SG, MY: triggers + queries only)
+- [x] Legal index + JSONL ingestion CLI; full-text retrieval with jurisdiction and in-force filters; lexical rerank
+- [ ] Real SG/MY primary-law corpus ingested (sites unreachable from dev; fetchers not written) — ADR-014
+- [ ] Dense retrieval (pgvector) + cross-encoder reranker
+- [x] Per-claim citation validator (existence, in-force, quote fidelity, entailment via router) + export gate
+- [x] Escalation T1 → T2 on low confidence / failed citations; conflict-blocked escalation → `needs_human`
+- [x] Dispositions with reason codes, citation overrides (partner/KM/admin), telemetry events
+- [x] Few-shot memory from the firm's accepted/edited redlines, scoped by ethical walls — ADR-015
+- [x] Redline DOCX (Word tracked changes) + review memo DOCX; encrypted export storage
+- [x] Admin spend view (by matter, task, tier)
+- [ ] Review canvas web UI (next slice)
+- [ ] OCR for scanned PDFs; signing-date extraction (law is checked "as of today")
+- [ ] SSE progress stream (polling only)
+- [ ] Security baseline + external pen test; design-partner onboarding
 
 ## P2 — Regional expansion & enterprise readiness (months 4–6)
 - Vietnam + Indonesia jurisdiction packs; VI/ID/MS language support; bilingual alignment and discrepancy detection.

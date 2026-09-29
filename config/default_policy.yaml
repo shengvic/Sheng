@@ -8,7 +8,10 @@ providers:
 defaults:
   classify: { tier: T1 }
   clause_extraction: { tier: T1 }
+  playbook_compare: { tier: T1, escalate_to: T2 }
   law_check: { tier: T1, escalate_to: T2 }
+  validate_claim: { tier: T1, escalate_to: T2 }
+  redline: { tier: T1, escalate_to: T2 }
   memo: { tier: T1, escalate_to: T2 }
 budgets:
   per_matter_usd: 300

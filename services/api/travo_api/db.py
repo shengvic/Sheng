@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from functools import lru_cache
 
@@ -25,9 +25,17 @@ def set_tenant(session: Session, tenant_id: str) -> None:
     session.execute(text("SELECT set_config('app.tenant_id', :t, true)"), {"t": tenant_id})
 
 
+def after_commit(session: Session, fn: Callable[[], None]) -> None:
+    """Run `fn` once this tenant session's transaction has committed (not on rollback)."""
+    session.info.setdefault("after_commit", []).append(fn)
+
+
 @contextmanager
 def tenant_session(tenant_id: str, engine: Engine | None = None) -> Iterator[Session]:
     factory = sessionmaker(bind=engine or get_engine(), expire_on_commit=False)
-    with factory() as session, session.begin():
-        set_tenant(session, tenant_id)
-        yield session
+    with factory() as session:
+        with session.begin():
+            set_tenant(session, tenant_id)
+            yield session
+        for fn in session.info.pop("after_commit", []):
+            fn()

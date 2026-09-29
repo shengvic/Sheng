@@ -1,0 +1,83 @@
+# Travo starter playbook — firm positions only (no statute text). Firms clone and edit.
+key: nda_sg
+version: 1
+name: NDA (Singapore law) — starter
+applies_to: { contract_types: [NDA], governing_laws: [SG] }
+rules:
+  - key: confidentiality_core
+    clause_key: confidentiality_obligations
+    required: true
+    standard: Recipient keeps information confidential and uses it only for the Purpose.
+    must_include_any: [confidential]
+    severity: high
+    rationale: Core protection of the NDA.
+    redline_template: >-
+      The Recipient shall keep the Confidential Information strictly confidential and shall
+      use it solely for the Purpose.
+  - key: term_length
+    clause_key: term_and_termination
+    required: true
+    standard: At least 3 years; 2 years acceptable as fallback.
+    min_duration_months: 36
+    fallback_min_duration_months: 24
+    severity: high
+    rationale: Short terms expose the client once the agreement lapses.
+    redline_template: >-
+      This Agreement continues for three (3) years from the Effective Date, and the
+      confidentiality obligations survive termination for a further two (2) years.
+  - key: exclusions_present
+    clause_key: exclusions
+    required: true
+    standard: Standard carve-outs (public domain, prior knowledge, independent development).
+    severity: medium
+    rationale: Without carve-outs the Recipient may be exposed to unreasonable claims.
+    redline_template: >-
+      The obligations in this Agreement do not apply to information that is or becomes public
+      other than through breach, was lawfully known to the Recipient before disclosure, or is
+      independently developed.
+  - key: permitted_disclosure_present
+    clause_key: permitted_disclosure
+    required: true
+    standard: Disclosure permitted where required by law, with prompt notice where lawful.
+    severity: medium
+    rationale: Needed to comply with court orders and regulators.
+  - key: return_destroy
+    clause_key: return_or_destruction
+    required: true
+    standard: Return or destroy on request, with certification.
+    severity: medium
+    rationale: Ensures information does not linger after the relationship.
+    redline_template: >-
+      On request, the Recipient shall promptly return or destroy all Confidential Information
+      and certify in writing that it has done so.
+  - key: governing_law_sg
+    clause_key: governing_law
+    required: true
+    standard: Singapore law.
+    must_include_any: [singapore]
+    severity: medium
+    rationale: Firm practice for SG-law templates.
+    redline_template: This Agreement is governed by the laws of Singapore.
+  - key: forum
+    clause_key: dispute_resolution
+    required: true
+    standard: SIAC arbitration or Singapore courts.
+    must_include_any: [siac, singapore international arbitration, courts of singapore]
+    severity: medium
+    rationale: Enforceable, neutral forum.
+  - key: liability_not_unlimited
+    clause_key: limitation_of_liability
+    must_not_include_any: [unlimited liability]
+    severity: medium
+    rationale: Unlimited liability is not acceptable for the client.
+  - key: non_solicit_max
+    clause_key: non_solicitation
+    max_duration_months: 12
+    severity: low
+    rationale: Longer restraints risk unenforceability and client pushback.
+  - key: personal_data
+    clause_key: data_protection
+    required: true
+    standard: Parties comply with applicable personal data protection law.
+    severity: low
+    rationale: Personal data is frequently exchanged under NDAs.

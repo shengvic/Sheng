@@ -92,3 +92,20 @@ Routing precedence: **client override → practice-group playbook → firm defau
 | Law check + validate | 90 s |
 | Redline + memo | 60 s |
 | **Total** | **≤ 4.5 min** (streamed progressively) |
+
+## 9. As built — P1 slice 1 (2026-09-29)
+- **Steps** (`config/review.yaml`): `prepare → compare → lawcheck → redline → memo`. Classification
+  and clause extraction still run at upload; `prepare` reuses them. Each step commits its rows and
+  its `completed` marker in one transaction (ADR-013).
+- **Playbook rule schema** (`travo_agents/playbooks.py`): `key`, `clause_key`, `required`,
+  `must_include_any`, `must_not_include_any`, `min_duration_months`,
+  `fallback_min_duration_months`, `max_duration_months`, `min_amount`, `max_amount`, `severity`,
+  `standard`, `rationale`, `redline_template`. Standard results get severity `info` and do not
+  block export.
+- **Jurisdiction packs** (`config/jurisdiction_packs/*.yaml`): rule `key`, `clause_keys`,
+  `triggers`, retrieval `query`, `issue`, `severity`. No legal text lives in packs.
+- **Escalation:** compare escalates when any confidence < `thresholds.playbook_compare` or a
+  required rule is unanswered; law-check retries once with validator feedback, then escalates;
+  if policy forbids a higher tier the finding becomes `needs_human`.
+- **Export gate:** blocks while any non-`info` finding is undispositioned or deferred, or a
+  non-rejected finding has a citation that is not `supported` and not overridden.

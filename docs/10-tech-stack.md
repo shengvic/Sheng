@@ -40,6 +40,14 @@ Chosen for **time to market** with a small team, while keeping every piece swapp
 | S3/GCS | `LocalEncryptedStore` behind `ObjectStore` protocol | Swap per deployment |
 | Python 3.12 | 3.11+ supported (container has 3.11) | — |
 
+## P1 deviations (slice 1, 2026-09-29)
+| Planned | As built | Why / when it changes |
+|---|---|---|
+| Temporal | Postgres step runner + `travo worker` (ADR-013) | Testable without infra; swap behind `WorkflowRunner` when multi-hour agent graphs need it |
+| OpenSearch BM25 + pgvector | Postgres full-text + lexical rerank; dense hook unused | Corpus is tiny until real ingestion; add pgvector with embeddings endpoint |
+| Cross-encoder reranker | Lexical-overlap reranker | Needs a hosted T0 reranker |
+| SSE progress | Polling `GET /v1/reviews/{id}` | Comes with the web UI |
+
 ## Monorepo layout
 See `CLAUDE.md` → "Repo layout". Tooling: `pnpm` workspaces (TS), `uv` (Python), `make` targets for dev (`make dev`, `make test`, `make eval`).
 
