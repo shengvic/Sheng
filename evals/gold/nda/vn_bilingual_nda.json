@@ -1,0 +1,42 @@
+{
+  "contract_type": "NDA",
+  "governing_law": "VN",
+  "languages": [
+    "vi",
+    "en"
+  ],
+  "clauses": [
+    {
+      "heading": "Preamble",
+      "key": "parties"
+    },
+    {
+      "heading": "Điều 1. Định nghĩa / Definitions",
+      "key": "definitions"
+    },
+    {
+      "heading": "Điều 2. Nghĩa vụ bảo mật / Confidentiality",
+      "key": "confidentiality_obligations"
+    },
+    {
+      "heading": "Điều 3. Thời hạn / Term",
+      "key": "term_and_termination"
+    },
+    {
+      "heading": "Điều 4. Dữ liệu cá nhân / Personal Data",
+      "key": "data_protection"
+    },
+    {
+      "heading": "Điều 5. Luật áp dụng / Governing Law",
+      "key": "governing_law"
+    },
+    {
+      "heading": "Điều 6. Giải quyết tranh chấp / Dispute Resolution",
+      "key": "dispute_resolution"
+    },
+    {
+      "heading": "Điều 7. Ngôn ngữ / Language",
+      "key": "language"
+    }
+  ]
+}

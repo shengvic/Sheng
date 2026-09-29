@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+from fastapi import FastAPI
+
+from travo_api.routes import admin, documents, matters
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Travo API", version="0.1.0-p0")
+    app.include_router(matters.router)
+    app.include_router(documents.router)
+    app.include_router(admin.router)
+
+    @app.get("/healthz", include_in_schema=False)
+    def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
+    return app
+
+
+app = create_app()

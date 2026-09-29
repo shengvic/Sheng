@@ -13,3 +13,13 @@ contract & agreement review for Vietnam, Singapore, Indonesia and Malaysia.
 Start with [`CLAUDE.md`](CLAUDE.md) for the doc map, then
 [`docs/01-product-vision-and-prd.md`](docs/01-product-vision-and-prd.md) and
 [`docs/12-roadmap.md`](docs/12-roadmap.md).
+
+## Development
+Requires Python 3.11+, [uv](https://docs.astral.sh/uv/), and Postgres 16 binaries (tests start
+an ephemeral server) or Docker.
+```
+make install
+make check    # lint + typecheck + tests
+make eval
+```
+See `CLAUDE.md` for the repo layout, dev commands and invariants.

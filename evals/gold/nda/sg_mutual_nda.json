@@ -1,0 +1,65 @@
+{
+  "contract_type": "NDA",
+  "governing_law": "SG",
+  "languages": [
+    "en"
+  ],
+  "clauses": [
+    {
+      "heading": "Preamble",
+      "key": "parties"
+    },
+    {
+      "heading": "Definitions",
+      "key": "definitions"
+    },
+    {
+      "heading": "Purpose",
+      "key": "purpose"
+    },
+    {
+      "heading": "Confidentiality Obligations",
+      "key": "confidentiality_obligations"
+    },
+    {
+      "heading": "Exclusions",
+      "key": "exclusions"
+    },
+    {
+      "heading": "Permitted Disclosure",
+      "key": "permitted_disclosure"
+    },
+    {
+      "heading": "Return or Destruction",
+      "key": "return_or_destruction"
+    },
+    {
+      "heading": "Term and Termination",
+      "key": "term_and_termination"
+    },
+    {
+      "heading": "Remedies",
+      "key": "remedies"
+    },
+    {
+      "heading": "Personal Data",
+      "key": "data_protection"
+    },
+    {
+      "heading": "Governing Law",
+      "key": "governing_law"
+    },
+    {
+      "heading": "Dispute Resolution",
+      "key": "dispute_resolution"
+    },
+    {
+      "heading": "Notices",
+      "key": "notices"
+    },
+    {
+      "heading": "Entire Agreement",
+      "key": "entire_agreement"
+    }
+  ]
+}

@@ -33,6 +33,22 @@ gantt
 
 **Exit criteria:** upload NDA → classify → extract clauses via T1 → results visible; denied provider never called (contract test); cross-tenant access tests pass.
 
+**P0 checklist** (updated 2026-09-29)
+- [x] Monorepo (uv), Makefile, CI workflow (lint, mypy, tests against Postgres)
+- [x] Tenants, users, matters, ethical-wall membership; Postgres RLS on every tenant table
+- [x] Dev JWT auth (HS256) + OIDC JWKS hook (RS256) — real IdP not yet wired
+- [x] Document upload, envelope-encrypted storage (local FS; KMS interface), DOCX/PDF/TXT parsing, clause segmentation v0
+- [x] Router v0: policy engine (allow/deny, matter conflict incl. aggregators, residency, BYO/proxy, budgets, escalation), fallback, `RoutingDecision` log, dry-run API
+- [x] Classify + clause-extraction agents through the router; `travo_rules` T0 model for offline runs
+- [x] Append-only audit log; admin audit/routing APIs
+- [x] Eval harness + 3 synthetic gold NDAs (SG, MY, VN bilingual)
+- [ ] Terraform SG cell (dev/staging)
+- [ ] Real SSO (OIDC provider, SCIM)
+- [ ] OpenTelemetry + Langfuse (in-cell)
+- [ ] Real T1 open-weight endpoint on Fireworks/Baseten (needs account + key; decide Q5/Q6)
+- [ ] 30 real annotated NDAs (SG/MY) replacing synthetic gold set
+- [ ] Exit criterion "extract via **T1**": currently served by T0 `travo_rules` until a T1 endpoint is configured
+
 ## P1 — Contract Review MVP, SG/MY English (weeks 6–14)
 **Goal:** design partners use Travo on real (non-critical) matters.
 - `ContractReviewWorkflow` on Temporal with all agents from [05](05-contract-review-workflow.md).

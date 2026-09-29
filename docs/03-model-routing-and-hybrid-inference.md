@@ -25,6 +25,13 @@ per matter, rather than a hard-coded dependency. Benefits:
 | **T1 — Travo Domain (open-weight, post-trained)** | 30–120B-class open-weight base (Qwen / Llama / Mistral / Gemma / DeepSeek families) + Travo legal SFT/DPO + optional **per-firm LoRA adapter** | clause extraction, playbook comparison, first-pass risk findings, routine drafting & redlines, long multi-hour reviews, summarisation |
 | **T2 — Frontier** | latest GPT, Claude, Gemini models (via BYO key or Travo proxy) | ambiguous multi-jurisdictional reasoning, novel clause structures, complex multimodal documents, final memo synthesis on high-stakes matters, judge/validator on escalated items |
 
+### Vendors vs hosts
+Each endpoint records the model **vendor** (`provider`, whose model runs) and the **host or
+aggregator** it goes through (`via`: Fireworks, Baseten, OpenRouter). Both see the data, so
+deny lists and matter conflict profiles apply to both: denying `anthropic` also blocks
+Anthropic models reached via OpenRouter. Travo's own models (`provider: travo`) count as first
+party: they pass "only these vendors" allowlists, but can still be denied explicitly.
+
 ## 3. Task Descriptor (router input)
 ```json
 {
@@ -53,7 +60,7 @@ per matter, rather than a hard-coded dependency. Benefits:
    - Capability requirements (context length, vision, tool use).
 2. **Default choice:** lowest-cost tier meeting `quality_floor` for `task_type` (from a routing table learned from evals, see [11](11-evaluation-and-quality.md)).
 3. **Budget:** if per-matter budget would be exceeded, downgrade within quality floor or pause and ask the user.
-4. **Fallback:** on provider error/timeout → next eligible endpoint in same tier → next tier.
+4. **Fallback:** on provider error/timeout → next eligible endpoint in same tier → lower tiers → higher tiers allowed by the rule. On an **escalation**, lower tiers are excluded (they already failed).
 5. **Record** a `RoutingDecision` (inputs, candidates, filtered-out reasons, chosen, cost, latency) — visible to admins and in the UI's "why this model" panel.
 
 Policy is expressed as versioned YAML per tenant (with matter overrides) and evaluated by a small deterministic engine (no LLM in the policy path):

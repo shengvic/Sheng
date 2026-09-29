@@ -29,8 +29,19 @@ Chosen for **time to market** with a small team, while keeping every piece swapp
 | Infra | Terraform, Kubernetes (EKS/GKE) + Helm; one stack per region cell | Reproducible cells |
 | CI/CD | GitHub Actions; preview envs; eval gates on prompt/model changes | |
 
+## P0 deviations (as built, 2026-09-29)
+| Planned | As built in P0 | Why / when it changes |
+|---|---|---|
+| LiteLLM gateway | Own `OpenAICompatibleProvider` (httpx) behind the `Provider` interface | Fewer moving parts; LiteLLM can sit behind the same interface when needed (ADR-009) |
+| Separate services | Modular monolith, in-process packages (ADR-008) | Split when scaling/ownership requires |
+| pgvector | Not yet used | Embeddings start in P1 retrieval work |
+| Temporal | Inline synchronous pipeline | Durable workflows needed for multi-step P1 reviews |
+| Cloud KMS | `LocalKms` (AES-GCM master key from env) behind `Kms` protocol | Swap per deployment |
+| S3/GCS | `LocalEncryptedStore` behind `ObjectStore` protocol | Swap per deployment |
+| Python 3.12 | 3.11+ supported (container has 3.11) | — |
+
 ## Monorepo layout
-See `CLAUDE.md` → "Planned repo layout". Tooling: `pnpm` workspaces (TS), `uv` (Python), `make` targets for dev (`make dev`, `make test`, `make eval`).
+See `CLAUDE.md` → "Repo layout". Tooling: `pnpm` workspaces (TS), `uv` (Python), `make` targets for dev (`make dev`, `make test`, `make eval`).
 
 ## Engineering conventions
 - Prompts are versioned files (`services/agents/prompts/<agent>/<version>.md`) with eval cases; no inline prompt strings.

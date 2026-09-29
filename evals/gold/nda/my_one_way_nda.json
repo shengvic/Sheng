@@ -1,0 +1,49 @@
+{
+  "contract_type": "NDA",
+  "governing_law": "MY",
+  "languages": [
+    "en"
+  ],
+  "clauses": [
+    {
+      "heading": "Preamble",
+      "key": "parties"
+    },
+    {
+      "heading": "Interpretation",
+      "key": "definitions"
+    },
+    {
+      "heading": "Obligations of the Recipient",
+      "key": "confidentiality_obligations"
+    },
+    {
+      "heading": "No Licence",
+      "key": "no_license"
+    },
+    {
+      "heading": "No Warranty",
+      "key": "no_warranty"
+    },
+    {
+      "heading": "Limitation of Liability",
+      "key": "limitation_of_liability"
+    },
+    {
+      "heading": "Non-Solicitation",
+      "key": "non_solicitation"
+    },
+    {
+      "heading": "Assignment",
+      "key": "assignment"
+    },
+    {
+      "heading": "Governing Law and Jurisdiction",
+      "key": "governing_law"
+    },
+    {
+      "heading": "Counterparts",
+      "key": "language"
+    }
+  ]
+}

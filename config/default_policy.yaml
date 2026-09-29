@@ -1,0 +1,15 @@
+# Default tenant model policy (docs/03 §4). Tenants override via PUT /v1/admin/model-policy.
+billing:
+  mode: byo_keys
+  fallback_to_proxy: false
+providers:
+  allow: null
+  deny: []
+defaults:
+  classify: { tier: T1 }
+  clause_extraction: { tier: T1 }
+  law_check: { tier: T1, escalate_to: T2 }
+  memo: { tier: T1, escalate_to: T2 }
+budgets:
+  per_matter_usd: 300
+  per_month_usd: 20000

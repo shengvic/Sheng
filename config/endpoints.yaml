@@ -1,0 +1,65 @@
+# Model endpoint catalogue (docs/03). `provider` = model vendor (conflict/deny policy applies),
+# `via` = aggregator/host that also sees the data. Endpoints whose `api_key_env` is unset are
+# disabled at startup. Model ids are examples — pin real ids per deployment. [verify]
+endpoints:
+  - id: travo-rules-v0
+    provider: travo
+    model: rules-v0
+    adapter: travo_rules
+    tier: T0
+    billing: travo
+    regions: ["*"]
+    capabilities: [json_output, long_context]
+    max_context: 1000000
+
+  - id: fireworks-t1-openweight
+    provider: travo          # Travo-post-trained open weights; Fireworks hosts them
+    via: fireworks
+    model: accounts/travo/models/travo-legal-t1   # placeholder until P3 post-training
+    tier: T1
+    billing: travo
+    base_url: https://api.fireworks.ai/inference/v1
+    api_key_env: TRAVO_FIREWORKS_API_KEY
+    regions: ["US"]          # [verify] SG-region dedicated deployment
+    capabilities: [json_output, long_context]
+    max_context: 128000
+    price_in_per_mtok: 0.9
+    price_out_per_mtok: 0.9
+
+  - id: openai-byo-frontier
+    provider: openai
+    model: gpt-5
+    tier: T2
+    billing: byo
+    base_url: https://api.openai.com/v1
+    regions: ["US"]
+    capabilities: [json_output, long_context, tool_use, vision]
+    max_context: 400000
+    price_in_per_mtok: 1.25
+    price_out_per_mtok: 10.0
+
+  - id: anthropic-byo-frontier
+    provider: anthropic
+    model: claude-sonnet-5-5
+    tier: T2
+    billing: byo
+    base_url: https://api.anthropic.com/v1    # OpenAI-compatible endpoint
+    regions: ["US"]
+    capabilities: [json_output, long_context, tool_use, vision]
+    max_context: 200000
+    price_in_per_mtok: 3.0
+    price_out_per_mtok: 15.0
+
+  - id: openrouter-proxy-anthropic
+    provider: anthropic
+    via: openrouter
+    model: anthropic/claude-sonnet-5-5
+    tier: T2
+    billing: proxy
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: TRAVO_OPENROUTER_API_KEY
+    regions: ["US"]
+    capabilities: [json_output, long_context, tool_use, vision]
+    max_context: 200000
+    price_in_per_mtok: 3.0
+    price_out_per_mtok: 15.0

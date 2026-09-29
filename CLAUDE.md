@@ -8,8 +8,10 @@ legal sources with per-claim citation checks, and escalates hard sub-tasks to
 frontier models through a **model-agnostic, conflict-aware router**.
 
 ## Current phase
-- **Phase:** P0 — specs complete, no application code yet.
-- **Next step:** start P0 foundations (see `docs/12-roadmap.md` §P0).
+- **Phase:** P0 — foundations in progress. Local-testable slice done (tenancy + RLS,
+  ethical walls, encrypted storage, router v0, classify/extract agents, audit, evals).
+- **Next step:** remaining P0 items in `docs/12-roadmap.md` §P0 checklist (cloud infra,
+  real SSO, Temporal, Langfuse/OTel, real T1 endpoint, 30 real NDAs).
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -44,16 +46,37 @@ frontier models through a **model-agnostic, conflict-aware router**.
 - Never hard-code a model vendor in business logic — everything goes through the
   router (ADR-002).
 
-## Planned repo layout (once code starts, per docs/10)
+## Repo layout
+Modular monolith in one uv project (ADR-008): packages import each other in-process and
+can be split into deployables later.
 ```
-apps/web          Next.js workspace UI
-apps/word-addin   Office.js add-in
-services/api      FastAPI gateway + tenancy/auth
-services/agents   orchestrator + sub-agents (LangGraph)
-services/router   model router / LLM gateway
-services/rag      ingestion, indexing, retrieval, citation validator
-services/flywheel telemetry, datasets, eval + training jobs
-packages/schemas  shared types (OpenAPI / JSON Schema)
-infra/            Terraform, Helm
-evals/            golden sets + harness
+services/api      travo_api    FastAPI app, auth, walls, audit, storage, admin, migrations
+services/router   travo_router Task descriptor, policy engine, provider adapters, Router
+services/rag      travo_rag    parsing (DOCX/PDF/TXT), language ID, clause segmentation
+services/agents   travo_agents taxonomy, classify/extract agents, travo_rules T0 model, pipeline
+config/           endpoints.yaml (model catalogue), default_policy.yaml
+evals/            gold/nda (synthetic), harness.py, make_gold.py
+tests/            pytest; spins up an ephemeral Postgres 16 automatically
+scripts/          create_app_role.sql
 ```
+Not yet created (planned): `apps/web`, `apps/word-addin`, `services/flywheel`,
+`packages/schemas`, `infra/`.
+
+## Dev commands
+```
+make install      # uv sync
+make check        # ruff + mypy + pytest (tests start their own Postgres)
+make eval         # clause/classification scores on gold NDAs
+make db-up db-migrate dev   # local API on :8000 (needs Docker + .env from .env.example)
+PYTHONPATH=services/api:services/rag:services/router:services/agents \
+  uv run python -m travo_api.cli bootstrap-tenant "Firm" admin@firm.test   # then mint-token
+```
+
+## Invariants the code relies on
+- The API connects as `travo_api` (member of `travo_app`), never as owner/superuser, so RLS
+  applies. Every request runs in `tenant_session()` which sets `app.tenant_id`.
+- Matter content is reachable only by `matter_members.access = 'member'` — admins included.
+  Unauthorised access returns 404 and writes `matter.access_denied` to the audit log.
+- `audit_events` and `routing_decisions` are append-only (trigger + grants).
+- Endpoint `provider` = model vendor; `via` = aggregator/host. Deny/allow lists and matter
+  conflicts apply to both. `travo` (first party) is exempt from allowlists only.
