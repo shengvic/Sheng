@@ -73,3 +73,11 @@ POST  /v1/citations/{id}/override       {reason} (partner / KM / admin)
 GET   /v1/playbooks  GET /v1/playbooks/{key}  POST /v1/playbooks {yaml | from_starter, key?}
 GET   /v1/admin/spend
 ```
+
+## 5. Added in P1 slice 2 (2026-09-29)
+```
+GET   /v1/me                           current user, role, tenant name
+GET   /v1/legal-units/{unit_id}        public-law unit for the sources panel (URL-encode '#', '/')
+GET   /v1/reviews/{id}/routing         routing decisions for the review's document (members only)
+PATCH /v1/findings/{id}  action=reset  undo: clears the disposition (audited + telemetry)
+```

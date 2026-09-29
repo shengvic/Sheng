@@ -46,7 +46,9 @@ Chosen for **time to market** with a small team, while keeping every piece swapp
 | Temporal | Postgres step runner + `travo worker` (ADR-013) | Testable without infra; swap behind `WorkflowRunner` when multi-hour agent graphs need it |
 | OpenSearch BM25 + pgvector | Postgres full-text + lexical rerank; dense hook unused | Corpus is tiny until real ingestion; add pgvector with embeddings endpoint |
 | Cross-encoder reranker | Lexical-overlap reranker | Needs a hosted T0 reranker |
-| SSE progress | Polling `GET /v1/reviews/{id}` | Comes with the web UI |
+| SSE progress | Polling `GET /v1/reviews/{id}` every 2 s while running (web UI) | Move to SSE when runs get long |
+| shadcn/ui | Small in-house primitives (`apps/web/src/components/ui.tsx`) on Tailwind 4 | Fewer deps; adopt shadcn if the component set grows |
+| OIDC sign-in in web | Dev token in `sessionStorage`, same-origin `/api` proxy (ADR-017) | Replace with OIDC (auth code + PKCE, httpOnly session cookie) before pilots |
 
 ## Monorepo layout
 See `CLAUDE.md` → "Repo layout". Tooling: `pnpm` workspaces (TS), `uv` (Python), `make` targets for dev (`make dev`, `make test`, `make eval`).

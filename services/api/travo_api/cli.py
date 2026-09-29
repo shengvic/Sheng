@@ -70,6 +70,7 @@ def main() -> None:
     w = sub.add_parser("worker")
     w.add_argument("--once", action="store_true", help="drain the queue once and exit")
     w.add_argument("--poll", type=float, default=2.0)
+    sub.add_parser("dev-token", help="demo tenant + partner; prints a 12h token (dev only)")
     i = sub.add_parser("ingest-legal")
     i.add_argument("path")
     args = p.parse_args()
@@ -80,6 +81,8 @@ def main() -> None:
         print(add_user(args.tenant_id, args.email, args.role))
     elif args.cmd == "mint-token":
         print(mint_dev_token(args.user_id, args.tenant_id, args.ttl))
+    elif args.cmd == "dev-token":
+        print(dev_token())
     elif args.cmd == "worker":
         run_worker(args.once, args.poll)
     else:
@@ -113,3 +116,24 @@ def ingest_legal(path: str) -> int:
 
 if __name__ == "__main__":
     main()
+
+
+DEV_TENANT = "Travo Demo LLP"
+
+
+def dev_token() -> str:
+    """Development only: reuse (or create) a demo tenant and partner and mint a 12h token."""
+    from sqlalchemy import select
+
+    with Session(get_admin_engine()) as s:
+        tenant = s.scalar(select(Tenant).where(Tenant.name == DEV_TENANT))
+        partner = (
+            s.scalar(select(User).where(User.tenant_id == tenant.id, User.role == "partner"))
+            if tenant
+            else None
+        )
+        tid, uid = (str(tenant.id), str(partner.id)) if tenant and partner else (None, None)
+    if tid is None:
+        tid, _admin = bootstrap_tenant(DEV_TENANT, "admin@demo.travo.test")
+        uid = add_user(tid, "partner@demo.travo.test", "partner")
+    return mint_dev_token(str(uid), tid, 12 * 3600)

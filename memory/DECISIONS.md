@@ -89,3 +89,9 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
 - **Date:** 2026-09-29 · **Status:** Accepted
 - **Decision:** Export requires a completed run, every non-`info` finding dispositioned (defer blocks), and every citation on a non-rejected finding `supported` or overridden with a reason by a partner/KM/admin. `info` (standard) findings never block.
 - **Consequences:** Lawyers can clear low-value checks quickly while unsupported law cannot reach a client document silently.
+
+## ADR-017 — Web app: client-side data, same-origin proxy, dev-token sign-in until OIDC
+- **Date:** 2026-09-29 · **Status:** Accepted (temporary auth)
+- **Context:** The review canvas is highly interactive; the API already enforces tenancy, walls and roles. Real SSO (OIDC) is still an open P0 item.
+- **Decision:** `apps/web` fetches client-side via TanStack Query; Next.js rewrites `/api/*` to the API so the browser never talks cross-origin (no CORS surface). Sign-in is a dev JWT pasted into `/login` and kept in `sessionStorage`; any 401 clears it. `agentRules: false` stops Next from writing AGENTS.md/CLAUDE.md into the app.
+- **Consequences:** Tokens in `sessionStorage` are readable by page scripts — acceptable for dev only. Before pilots: OIDC auth-code + PKCE with an httpOnly session cookie set by the Next server, and CSP headers.

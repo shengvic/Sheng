@@ -9,7 +9,7 @@ from travo_api.auth import Actor, get_actor
 from travo_api.config import get_settings
 from travo_api.db import after_commit
 from travo_api.exports import blocking_items, create_export, read_export
-from travo_api.models import Citation, Export, Finding, ReviewRun, ReviewStep
+from travo_api.models import Citation, Export, Finding, ReviewRun, ReviewStep, RoutingDecision
 from travo_api.reviews import runner, start_review
 from travo_api.schemas import (
     CitationOut,
@@ -17,6 +17,7 @@ from travo_api.schemas import (
     ExportOut,
     FindingOut,
     ReviewOut,
+    ReviewRoutingOut,
     ReviewStart,
     ReviewStepOut,
 )
@@ -142,3 +143,31 @@ def download_export(export_id: uuid.UUID, actor: Actor = Depends(get_actor)) -> 
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
     )
+
+
+@router.get("/v1/reviews/{run_id}/routing", response_model=list[ReviewRoutingOut])
+def review_routing(run_id: uuid.UUID, actor: Actor = Depends(get_actor)) -> list[ReviewRoutingOut]:
+    """Model routing for this review's document — the "Why this model?" panel (docs/08 §3.2).
+    Visible to matter members; the tenant-wide log stays admin-only."""
+    run = require_run(actor, run_id)
+    rows = actor.session.scalars(
+        select(RoutingDecision)
+        .where(RoutingDecision.document_id == run.document_id)
+        .order_by(RoutingDecision.created_at)
+    )
+    return [
+        ReviewRoutingOut(
+            id=r.id,
+            task_type=r.task_type,
+            chosen_endpoint=r.chosen_endpoint,
+            chosen_tier=r.chosen_tier,
+            outcome=r.outcome,
+            escalation_reason=(r.descriptor or {}).get("escalation_reason"),
+            filtered=r.filtered,
+            attempts=r.attempts,
+            cost_usd=float(r.cost_usd),
+            latency_ms=r.latency_ms,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]

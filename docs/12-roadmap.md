@@ -78,7 +78,8 @@ gantt
 - [x] Few-shot memory from the firm's accepted/edited redlines, scoped by ethical walls — ADR-015
 - [x] Redline DOCX (Word tracked changes) + review memo DOCX; encrypted export storage
 - [x] Admin spend view (by matter, task, tier)
-- [ ] Review canvas web UI (next slice)
+- [x] Review canvas web UI: matters, matter home, review canvas, sources drawer, Why-this-model, export bar, playbooks view; keyboard-first; light/dark; Playwright e2e (slice 2)
+- [ ] Admin console UI (policy editor, BYO keys, spend), real OIDC sign-in
 - [ ] OCR for scanned PDFs; signing-date extraction (law is checked "as of today")
 - [ ] SSE progress stream (polling only)
 - [ ] Security baseline + external pen test; design-partner onboarding

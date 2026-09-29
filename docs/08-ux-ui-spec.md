@@ -80,3 +80,22 @@ WCAG 2.2 AA; full keyboard navigation; UI strings via i18n (en, vi, id, ms); dat
 - Privacy-safe product analytics (event names and timings only, no content) per screen.
 - In-app feedback button with screenshot redaction.
 - Feature flags per tenant for staged rollouts and A/B tests of prompts/models (with eval gates).
+
+## 7. As built — P1 slice 2 (2026-09-29)
+`apps/web` (Next.js 16 App Router, TypeScript strict, Tailwind 4, TanStack Query). Client-side
+data fetching through a same-origin proxy (`/api/*` → API), dev-token sign-in (ADR-017).
+
+| Screen | Route | Built |
+|---|---|---|
+| Sign in | `/login` | Dev token paste; OIDC replaces it before pilots |
+| Matters | `/matters` | List + create (jurisdictions, conflict-blocked providers) |
+| Matter home | `/matters/[id]` | Wall + model-policy badges, drag-drop upload, classification chips, playbook picker, start review, reviews with live step progress |
+| Review canvas | `/reviews/[id]` | Step progress (polling), executive summary, export gate bar with jump-to blockers, document pane (clauses, severity badges, accepted/edited wording as tracked insertions/deletions, missing-clause ghost blocks), findings pane (filters, counts, cards with citation chips, redline diff, Why-this-model, override for partner/KM/admin), sources drawer (FIXTURE banner), undo toast, shortcuts help |
+| Playbooks | `/playbooks` | Read-only list + rule table (firm and starter) |
+
+Keyboard: `J/K` or arrows move, `A` accept, `E` edit, `R` reject (reason required), `D` defer,
+`S` first source, `Esc` close, `?` help. Undo uses the `reset` disposition server-side, so it is
+recorded in telemetry and audit like any other action.
+
+Not yet: admin console (policy editor, keys, spend UI), tabular review, Word add-in, SSE,
+vi/id/ms dictionaries (strings are centralised in `src/i18n/en.ts`), "Travo is learning" digest.

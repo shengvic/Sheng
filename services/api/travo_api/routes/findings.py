@@ -15,11 +15,12 @@ from travo_api.walls import require_matter
 
 router = APIRouter(tags=["findings"])
 
-ACTION_TO_DISPOSITION = {
+ACTION_TO_DISPOSITION: dict[str, str | None] = {
     "accept": "accepted",
     "edit": "edited",
     "reject": "rejected",
     "defer": "deferred",
+    "reset": None,  # undo: back to undispositioned (still recorded in telemetry + audit)
 }
 
 
@@ -45,8 +46,8 @@ def disposition(
     f.edited_text = body.edited_text if body.action == "edit" else None
     f.reason_code = body.reason_code
     f.note = body.note
-    f.disposition_by = actor.user_id
-    f.disposition_at = datetime.now(UTC)
+    f.disposition_by = actor.user_id if body.action != "reset" else None
+    f.disposition_at = datetime.now(UTC) if body.action != "reset" else None
     payload = {
         "action": body.action,
         "previous": previous,

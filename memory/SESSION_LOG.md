@@ -12,6 +12,16 @@ Template:
 
 ---
 
+## 2026-09-29 — P1 slice 2: review canvas web UI
+- **Done:** `apps/web` (Next.js 16, TS strict, Tailwind 4, TanStack Query): sign-in (dev token), matters list/create, matter home (upload, classification, playbook picker, start review, live progress), review canvas (document pane with tracked-change previews and missing-clause blocks, findings pane with filters, citation chips, sources drawer, Why-this-model, edit/reject-with-reason/defer/accept, citation override, undo, keyboard shortcuts, export gate bar, DOCX download), playbooks view; light/dark themes. API: `/v1/me`, `/v1/legal-units/{id}`, `/v1/reviews/{id}/routing`, `reset` disposition, `travo dev-token`. Tests: 99 Python, 17 vitest, 1 Playwright e2e (full lawyer flow incl. dark-mode check) via `scripts/e2e.sh`. CI jobs for web + e2e added (not yet run on GitHub).
+- **Decisions:** ADR-017.
+- **Next:**
+  1. Real OIDC sign-in (replace dev token) + CSP; admin console UI (policy editor, BYO keys, spend).
+  2. Real SG/MY legal corpus ingestion (fetchers) and lawyer spot-check.
+  3. Real T1 endpoint + evals on real NDAs; more starter playbooks.
+  4. Design-partner demo script using `make dev-token` + `make web-dev`.
+- **Open threads:** Next 16 dev blocks dev assets for `127.0.0.1` origins — use `localhost` (e2e does). Token in `sessionStorage` is dev-only (ADR-017). Eval scores remain synthetic.
+
 ## 2026-09-29 — P1 slice 1: backend review engine
 - **Done:** Durable Postgres review runner (resume/retry/backoff/leases; cross-tenant claim via one SECURITY DEFINER function). Starter playbooks NDA SG/MY with machine-checkable rules; firm playbook versioning API. Agents: playbook compare, law check (jurisdiction packs SG/MY), redline (few-shot from firm edits, wall-scoped), memo; prompts moved to versioned files. Legal index + JSONL ingestion CLI, full-text retrieval with in-force filters, per-claim citation validator (existence, in-force, quote fidelity, entailment via router). Escalation T1→T2 on low confidence / failed citations; conflict-blocked → needs_human. Findings dispositions with reason codes, citation overrides, telemetry. Export gate; redline DOCX with Word tracked changes; memo DOCX. Admin spend view. 94 tests; ruff + mypy clean; live smoke (server + `travo worker` + curl) passed.
 - **Decisions:** ADR-013..016.

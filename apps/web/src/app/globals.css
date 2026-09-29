@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Design tokens (docs/08 §1): calm neutrals, one accent, semantic severity colours.
+   All text/background pairs target WCAG 2.2 AA in both themes. */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0f0ed;
+  --border: #dcdcd6;
+  --text: #1c1d1f;
+  --muted: #5b5e63;
+  --accent: #1f5f5b;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2efed;
+  --focus: #2563eb;
+  --high: #b42318;
+  --high-soft: #fdecea;
+  --medium: #8a5300;
+  --medium-soft: #fdf1dc;
+  --low: #1d4f91;
+  --low-soft: #e5eefa;
+  --ok: #1e6b3a;
+  --ok-soft: #e3f3e8;
+  --ins: #1e6b3a;
+  --ins-bg: #e3f3e8;
+  --del: #b42318;
+  --del-bg: #fdecea;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131416;
+    --surface: #1b1c1f;
+    --surface-2: #232428;
+    --border: #34363b;
+    --text: #ececea;
+    --muted: #a3a6ab;
+    --accent: #6fc2b8;
+    --accent-ink: #0d1716;
+    --accent-soft: #1c3431;
+    --focus: #7aa7ff;
+    --high: #ff8a7a;
+    --high-soft: #3a1c19;
+    --medium: #f0b45a;
+    --medium-soft: #3a2a12;
+    --low: #8db8f5;
+    --low-soft: #182a42;
+    --ok: #7fd49a;
+    --ok-soft: #173021;
+    --ins: #7fd49a;
+    --ins-bg: #173021;
+    --del: #ff8a7a;
+    --del-bg: #3a1c19;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #131416;
+  --surface: #1b1c1f;
+  --surface-2: #232428;
+  --border: #34363b;
+  --text: #ececea;
+  --muted: #a3a6ab;
+  --accent: #6fc2b8;
+  --accent-ink: #0d1716;
+  --accent-soft: #1c3431;
+  --focus: #7aa7ff;
+  --high: #ff8a7a;
+  --high-soft: #3a1c19;
+  --medium: #f0b45a;
+  --medium-soft: #3a2a12;
+  --low: #8db8f5;
+  --low-soft: #182a42;
+  --ok: #7fd49a;
+  --ok-soft: #173021;
+  --ins: #7fd49a;
+  --ins-bg: #173021;
+  --del: #ff8a7a;
+  --del-bg: #3a1c19;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-high: var(--high);
+  --color-high-soft: var(--high-soft);
+  --color-medium: var(--medium);
+  --color-medium-soft: var(--medium-soft);
+  --color-low: var(--low);
+  --color-low-soft: var(--low-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+ins.redline {
+  color: var(--ins);
+  background: var(--ins-bg);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
+del.redline {
+  color: var(--del);
+  background: var(--del-bg);
+}
+
+.doc-text {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.7;
+}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -213,7 +213,7 @@ REASON_CODES = (
 
 
 class DispositionIn(BaseModel):
-    action: Literal["accept", "edit", "reject", "defer"]
+    action: Literal["accept", "edit", "reject", "defer", "reset"]
     edited_text: str | None = Field(default=None, max_length=20_000)
     reason_code: Literal[REASON_CODES] | None = None  # type: ignore[valid-type]
     note: str | None = Field(default=None, max_length=4000)
@@ -252,3 +252,44 @@ class PlaybookOut(BaseModel):
     governing_laws: list[str]
     rules: int
     spec: dict[str, Any] | None = None
+
+
+class MeOut(BaseModel):
+    id: uuid.UUID
+    email: str
+    name: str
+    role: str
+    tenant_id: uuid.UUID
+    tenant_name: str
+
+
+class LegalUnitOut(BaseModel):
+    id: str
+    source_id: str
+    source_title: str
+    jurisdiction: str
+    unit_path: str
+    pinpoint: str
+    heading: str
+    text: str
+    status: str
+    effective_from: date | None
+    effective_to: date | None
+    official_url: str | None
+    is_fixture: bool
+
+
+class ReviewRoutingOut(BaseModel):
+    """'Why this model?' — one routing decision, trimmed for matter members."""
+
+    id: uuid.UUID
+    task_type: str
+    chosen_endpoint: str | None
+    chosen_tier: str | None
+    outcome: str
+    escalation_reason: str | None
+    filtered: list[Any]
+    attempts: list[Any]
+    cost_usd: float
+    latency_ms: int
+    created_at: datetime
