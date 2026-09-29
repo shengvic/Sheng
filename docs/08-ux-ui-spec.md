@@ -1,0 +1,82 @@
+# 08 — UX / UI Specification
+
+> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [05](05-contract-review-workflow.md), [07](07-hitl-telemetry-data-flywheel.md)
+
+## 1. Design principles
+1. **Lawyer-native:** feels like Word + a sharp associate's issues list, not a chatbot. Chat exists but is secondary.
+2. **Show the evidence:** every finding has visible sources, confidence and the playbook rule it applies.
+3. **One-click teaching:** correcting Travo is faster than ignoring it; every correction visibly improves Travo.
+4. **Transparent machinery:** which model ran, why, what it cost — available on demand, never in the way.
+5. **Calm, professional aesthetic:** neutral palette, dense but legible tables, keyboard-first, light/dark themes; localised UI (EN, VI, ID, MS).
+
+## 2. Surfaces
+| Surface | Phase | Purpose |
+|---|---|---|
+| Web workspace | P1 | Matters, review canvas, playbooks, admin |
+| Word add-in (Office.js) | P2 | Review/redline inside the document the lawyer already has open |
+| Outlook add-in | P4 | Intake: "review this attachment" |
+| Admin console | P1 (basic) → P2 | Model policy, walls, residency, spend, audit |
+
+## 3. Key screens
+### 3.1 Matter home
+- Matter header: client, matter no., jurisdiction(s), wall badge (🔒 members), model-policy badge (e.g., "No OpenAI · SG residency").
+- Document list with status (processing / ready / in review / final), progress streaming.
+- "Start review" → choose or confirm playbook (pre-selected by classifier with confidence).
+
+### 3.2 Review canvas (core)
+```
+┌───────────────────────────── Matter: Acme / SPA ─────────── [Export ▾] ┐
+│ Document (rendered, clause-anchored)    │ Findings (filter: severity,  │
+│                                         │ status, clause, jurisdiction)│
+│ 12.1 Limitation of liability ▌◀────────▶│ ● HIGH  Liability cap        │
+│   highlighted, redline inline           │   Playbook: 12m fees (std)   │
+│                                         │   Found: uncapped            │
+│                                         │   ⚖ SG UCTA s.2 ✅  [chip]   │
+│                                         │   Confidence 0.91 · T1       │
+│                                         │  [Accept] [Edit] [Reject ▾]  │
+│                                         ├──────────────────────────────┤
+│                                         │ Sources panel (on chip click)│
+│                                         │  official text + translation │
+└─────────────────────────────────────────┴──────────────────────────────┘
+```
+- Keyboard: `J/K` next/prev finding, `A` accept, `E` edit, `R` reject (opens reason codes), `S` sources.
+- Citation chips: ✅ supported, ⚠️ partial, ❌ unsupported; click → sources panel with pinpoint highlight and in-force status.
+- "Why this model?" link on each finding → routing decision (tier, provider, escalation reason, cost).
+- Bilingual view toggle: side-by-side language versions with discrepancy markers.
+
+### 3.3 Playbook editor
+- Structured table per clause: standard / fallbacks / unacceptable / severity / redline template / law refs.
+- Version history with diffs and authors; "test against sample contracts" button (runs mini-eval).
+- **Suggestions inbox**: Travo-proposed playbook updates derived from repeated corrections ([07](07-hitl-telemetry-data-flywheel.md) §6), each with evidence (which edits, by whom).
+
+### 3.4 Tabular review (P2)
+Grid: rows = documents, columns = extracted terms/questions; each cell has citation to the clause; bulk accept; export XLSX.
+
+### 3.5 Admin console
+- Model policy editor (form over the YAML in [03](03-model-routing-and-hybrid-inference.md)); dry-run showing which models each task would use.
+- BYO key management (masked, tested, rotated).
+- Ethical walls: members, screened users, import from Intapp/iManage.
+- Spend dashboard: cost per matter, per task type, T1 vs T2 share.
+- Audit log search and export.
+
+### 3.6 "Travo is learning" panel (self-adaptive loop, visible)
+Weekly digest per practice group:
+- Acceptance rate trend, top corrected clause types, new playbook suggestions.
+- "Adapter v8 promoted: +6 pts acceptance on MSAs" (P3).
+- Items where Travo is still weak → invites expert reviewers to label a small batch.
+
+This makes improvement a visible, shared process between Travo and the firm, and gives Travo product teams aggregate (non-content) quality signals to prioritise work.
+
+## 4. Feedback UX details
+- Reject → required reason code (1 click) + optional note.
+- Edit → inline diff captured automatically; optional "apply to playbook" checkbox.
+- Batch actions for low-severity standard findings.
+- Undo for 10 s on every action.
+
+## 5. Accessibility & localisation
+WCAG 2.2 AA; full keyboard navigation; UI strings via i18n (en, vi, id, ms); date/number formats per locale; legal-source language shown with official-language label.
+
+## 6. Product iteration instrumentation (for Travo)
+- Privacy-safe product analytics (event names and timings only, no content) per screen.
+- In-app feedback button with screenshot redaction.
+- Feature flags per tenant for staged rollouts and A/B tests of prompts/models (with eval gates).

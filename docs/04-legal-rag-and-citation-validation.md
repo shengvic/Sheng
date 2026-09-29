@@ -1,0 +1,88 @@
+# 04 — Legal RAG & Per-Claim Citation Validation
+
+> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [02](02-system-architecture.md), [05](05-contract-review-workflow.md), [11](11-evaluation-and-quality.md)
+
+## 1. Goal
+Eliminate ungrounded legal assertions. Every legal proposition Travo outputs must
+be (a) supported by a retrieved source, (b) pinpoint-cited, and (c) machine-checked
+for entailment. Unsupported claims are visibly flagged and **cannot be exported as
+final** without a lawyer's explicit override (logged).
+
+## 2. Knowledge sources
+| Layer | Content | Scope |
+|---|---|---|
+| **Public primary law** | Statutes, subsidiary legislation, decrees, circulars, regulations; court judgments where public | Shared across tenants (read-only) |
+| **Licensed databases** | Commercial reporters/commentary via partnership APIs | Shared, license-gated per tenant |
+| **Firm knowledge** | Playbooks, precedents, clause banks, prior memos, templates | Tenant-private |
+| **Matter documents** | The contracts under review, correspondence | Matter-private (ethical wall) |
+
+### Jurisdiction packs (initial sources — confirm licensing, see [13](13-open-questions.md))
+| Jurisdiction | Public | Licensed / partner candidates |
+|---|---|---|
+| Singapore | Singapore Statutes Online (sso.agc.gov.sg), Supreme Court judgments, PDPC decisions | LawNet (SAL), LexisNexis SG `[verify]` |
+| Malaysia | Laws of Malaysia (AGC portal), Federal Gazette, e-Court judgments | CLJ Law, Lexis MY `[verify]` |
+| Vietnam | National Legal Database (vbpl.vn), Official Gazette (congbao), court precedents (anle.toaan.gov.vn) | Thư Viện Pháp Luật, LuatVietnam `[verify]` |
+| Indonesia | JDIH / peraturan.go.id, BPK JDIH database, Supreme Court decisions (putusan3.mahkamahagung.go.id) | Hukumonline Pro `[verify]` |
+| Cross-border | UNCITRAL, CISG, SIAC/KLRC/VIAC/BANI rules, ASEAN instruments | — |
+
+Each legal document is stored with metadata: `jurisdiction, instrument_type, number, title, issuing_body, effective_date, expiry/amended_by, status (in force / partly / repealed), language, official_url, version_hash`.
+
+**Temporal validity** is first-class: retrieval filters by the date relevant to the contract (signing date or "as of today"), and amendment chains are tracked so repealed provisions are never cited as current.
+
+## 3. Ingestion & indexing
+1. Fetch → normalise (HTML/PDF → structured text) → detect structure (Part/Chapter/Article/Clause/Point for VN/ID; Part/Section/Subsection for SG/MY).
+2. **Chunk by legal unit** (article/section), preserving hierarchy path (e.g., `VN/Law 91/2015/QH13 (Civil Code)/Art. 418/Cl. 1`). Chunks carry parent context summary.
+3. Dual indexing: **BM25** (exact terms, article numbers, defined terms) + **dense vectors** (multilingual embedding model supporting en/vi/id/ms).
+4. Cross-lingual support: store official language + machine translation (EN) side-by-side; cite the official language text, show translation as aid.
+5. Knowledge-graph edges: `amends`, `implements`, `repeals`, `cites`, `defines` — used for query expansion (e.g., Law → implementing Decree → guiding Circular).
+
+## 4. Retrieval pipeline
+```mermaid
+flowchart LR
+  Q[Legal question / claim] --> QR[Query rewrite<br/>+ jurisdiction & date filters<br/>+ cross-lingual expansion]
+  QR --> H[Hybrid search<br/>BM25 + dense]
+  H --> G[Graph expansion<br/>implementing/amending acts]
+  G --> RR[Cross-encoder rerank]
+  RR --> ACL[Ethical-wall filter<br/>tenant/matter ACL]
+  ACL --> CTX[Evidence pack<br/>top-k with pinpoints]
+```
+- ACL filtering happens **inside the retrieval service** (namespace + metadata filter), never only in the prompt.
+- Evidence pack items carry stable IDs used for citations: `src:<doc_id>#<unit_path>@<version_hash>`.
+
+## 5. Per-claim citation validation
+Applied to all generated text that makes legal or factual assertions (findings, law-check notes, memos, redline rationales).
+
+```mermaid
+flowchart TD
+  G[Generated text with inline cite markers] --> CE[Claim extraction<br/>atomic propositions]
+  CE --> M{Claim has cite?}
+  M -->|no| RET[Retrieve evidence for claim]
+  M -->|yes| FETCH[Fetch cited unit text<br/>verify exists, in force, correct version]
+  RET --> NLI
+  FETCH --> NLI[Entailment check<br/>supported / partially / contradicted / not found]
+  NLI --> S{Verdict}
+  S -->|supported| P[Mark ✅ with pinpoint]
+  S -->|partial| W[Mark ⚠️ + suggest qualified wording]
+  S -->|contradicted / not found| X[Mark ❌ → regenerate once with evidence → else escalate T2 → else human]
+```
+
+**Checks per citation:**
+1. **Existence** — the cited instrument/unit exists in the index (no invented case names or article numbers).
+2. **Validity** — in force at the relevant date; not repealed/superseded.
+3. **Pinpoint accuracy** — the article/section actually contains the proposition.
+4. **Entailment** — NLI model (T1 fine-tuned verifier; T2 judge on escalation) confirms the claim follows from the text.
+5. **Quote fidelity** — quoted text matches source verbatim (string match on normalised text).
+
+**Outputs:** each claim gets `{status, source_ids, pinpoint, confidence, checker_model, checked_at}` stored as `Citation` rows ([09](09-data-model-and-apis.md)). UI renders a citation chip; the export gate blocks ❌ claims unless overridden with a reason.
+
+## 6. Firm-knowledge grounding
+- Playbook positions are retrieved as structured records (not free text) so the playbook agent compares clause ↔ position deterministically where possible.
+- Precedents and clause banks are retrieved for redline suggestions; the suggestion cites the precedent clause it is based on.
+
+## 7. Quality targets
+| Metric | Target (P1) | Target (P3) |
+|---|---|---|
+| Citation existence accuracy | 100% (hard check) | 100% |
+| Citation precision (supported/total shown as ✅) | ≥ 95% | ≥ 98% |
+| Unsupported claims reaching export without override | 0 | 0 |
+| Retrieval recall@10 on golden legal questions | ≥ 85% | ≥ 92% |
