@@ -8,6 +8,7 @@ import { Chip } from "./ui";
 const TASKS: Record<Finding["kind"], string[]> = {
   playbook: ["playbook_compare", "redline"],
   law: ["law_check", "validate_claim"],
+  bilingual: ["bilingual_check"],
 };
 
 export function WhyModel({ finding, routing }: { finding: Finding; routing: RoutingRow[] }) {

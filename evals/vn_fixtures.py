@@ -150,3 +150,28 @@ def vietnamese_docx(clauses: Sequence[Clause] = NDA_CLAUSES) -> bytes:
         doc.add_paragraph(f"1. {vb}")
         doc.add_paragraph("2. Các bên cam kết thực hiện khoản này một cách thiện chí.")
     return _save(doc)
+
+
+# Seeded discrepancies (for tests and the eval set): what a reviewer must catch.
+SEEDED: dict[str, str] = {
+    "term_and_termination": "duration",  # 2 years (VI) vs 3 years (EN)
+    "penalty": "figure_words",  # 200.000.000 in figures, "Một trăm triệu" in words
+    "confidentiality_obligations": "negation",  # VI forbids disclosure, EN does not say so
+    "language": "prevailing_language",  # each version says it prevails
+}
+
+
+def seeded_clauses() -> list[Clause]:
+    out = []
+    for vh, vb, eh, eb, key in NDA_CLAUSES:
+        if key == "term_and_termination":
+            eb = "This Agreement remains in force for three (3) years from 1 February 2026."
+        elif key == "penalty":
+            vb = "Bên vi phạm phải trả tiền phạt 200.000.000 đồng (Bằng chữ: Một trăm triệu đồng)."
+            eb = "The breaching party shall pay a penalty of VND 200,000,000."
+        elif key == "confidentiality_obligations":
+            eb = "The Recipient shall keep the Confidential Information secret."
+        elif key == "language":
+            eb = "This Agreement is made in Vietnamese and English; the English version prevails."
+        out.append((vh, vb, eh, eb, key))
+    return out

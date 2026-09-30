@@ -113,7 +113,7 @@ export interface Citation {
 }
 
 export type Severity = "high" | "medium" | "low" | "info";
-export type Classification = "standard" | "fallback" | "non_standard" | "missing" | "legal_note";
+export type Classification = "standard" | "fallback" | "non_standard" | "missing" | "legal_note" | "discrepancy";
 export type Disposition = "accepted" | "edited" | "rejected" | "deferred";
 
 export interface Finding {
@@ -121,7 +121,7 @@ export interface Finding {
   clause_id: string | null;
   clause_key: string;
   rule_key: string;
-  kind: "playbook" | "law";
+  kind: "playbook" | "law" | "bilingual";
   classification: Classification;
   severity: Severity;
   summary: string;
@@ -135,7 +135,17 @@ export interface Finding {
   edited_text: string | null;
   reason_code: string | null;
   note: string | null;
+  evidence: BilingualEvidence | null;
   citations: Citation[];
+}
+
+/** Both language versions of a bilingual discrepancy (ADR-023). */
+export interface BilingualEvidence {
+  type: string;
+  languages: string[];
+  primary_span: string;
+  other_span: string;
+  prevailing: string | null;
 }
 
 export interface GateBlock {

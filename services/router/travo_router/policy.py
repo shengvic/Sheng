@@ -58,6 +58,7 @@ DEFAULT_RULES: dict[str, TaskRule] = {
     "embed": TaskRule(tier="T0"),
     "rerank": TaskRule(tier="T0"),
     "validate_claim": TaskRule(tier="T1", escalate_to="T2"),
+    "bilingual_check": TaskRule(tier="T1", escalate_to="T2"),
 }
 
 

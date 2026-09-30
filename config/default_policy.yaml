@@ -13,6 +13,7 @@ defaults:
   validate_claim: { tier: T1, escalate_to: T2 }
   redline: { tier: T1, escalate_to: T2 }
   memo: { tier: T1, escalate_to: T2 }
+  bilingual_check: { tier: T1, escalate_to: T2 }
 budgets:
   per_matter_usd: 300
   per_month_usd: 20000

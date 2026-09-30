@@ -28,6 +28,7 @@ function f(p: Partial<Finding>): Finding {
     model_tier: "T0",
     escalated: false,
     status: "needs_review",
+    evidence: null,
     disposition: null,
     edited_text: null,
     reason_code: null,

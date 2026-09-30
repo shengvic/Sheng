@@ -17,6 +17,7 @@ def test_sg_review_end_to_end(client, make_tenant):
     assert review["status"] == "completed", review
     assert [s["name"] for s in review["steps"]] == [
         "prepare",
+        "bilingual",  # runs, but skips an English-only contract
         "compare",
         "lawcheck",
         "redline",

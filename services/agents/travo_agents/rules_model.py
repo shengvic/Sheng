@@ -181,4 +181,7 @@ _HANDLERS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "validate_claim": _validate,
     "redline": _redline,
     "memo": _memo,
+    # Semantic comparison needs a language model; the deterministic bilingual checks run
+    # locally in travo_agents.bilingual whatever the tier.
+    "bilingual_check": lambda p: {"differences": []},
 }

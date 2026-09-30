@@ -29,6 +29,7 @@ class FindingDraft:
     redline_template: str | None = None
     suggested_redline: str | None = None
     note: str | None = None  # law notes: generated text with [[src:…]] markers
+    evidence: dict[str, Any] | None = None  # bilingual findings: both spans, prevailing language
 
 
 def clause_payload(clauses: list[dict[str, Any]]) -> list[dict[str, Any]]:

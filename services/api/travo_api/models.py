@@ -314,6 +314,8 @@ class Finding(Base):
     note: Mapped[str | None] = mapped_column(Text)
     disposition_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     disposition_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Bilingual findings (ADR-023): {type, languages, primary_span, other_span, prevailing}.
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = _created()
 
 

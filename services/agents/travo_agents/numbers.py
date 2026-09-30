@@ -199,8 +199,11 @@ class Duration:
 
 
 def parse_durations(text: str) -> list[Duration]:
+    text = _nfc(text)
+    for d in parse_dates(text):  # "ngày 01 tháng 02 năm 2026" is a date, not durations
+        text = text.replace(d.span, " " * len(d.span))
     out = []
-    for m in _DURATION.finditer(_nfc(text)):
+    for m in _DURATION.finditer(text):
         if m.group("digits"):
             n: int | None = int(m.group("digits"))
         elif m.group("paren"):

@@ -16,6 +16,7 @@ TaskType = Literal[
     "embed",
     "rerank",
     "validate_claim",
+    "bilingual_check",
 ]
 Tier = Literal["T0", "T1", "T2"]
 Capability = Literal["tool_use", "long_context", "vision", "json_output"]

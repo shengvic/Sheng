@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from travo_agents.base import AgentContext
+from travo_agents.bilingual import ClausePair, check_bilingual
 from travo_agents.compare import FindingDraft, compare
 from travo_agents.lawcheck import JurisdictionPack, lawcheck, load_packs
 from travo_agents.memo import write_memo
@@ -179,6 +180,7 @@ def _add_finding(sc: StepContext, d: FindingDraft, clause_ids: dict[int, uuid.UU
         model_tier=d.tier,
         escalated=d.escalated,
         status="needs_human" if d.needs_human else "needs_review",
+        evidence=d.evidence,
     )
     sc.session.add(f)
     sc.session.flush()
@@ -190,7 +192,9 @@ def _add_finding(sc: StepContext, d: FindingDraft, clause_ids: dict[int, uuid.UU
             matter_id=sc.run.matter_id,
             subject_id=f.id,
             payload={
-                "task": "law_check" if d.kind == "law" else "playbook_compare",
+                "task": {"law": "law_check", "bilingual": "bilingual_check"}.get(
+                    d.kind, "playbook_compare"
+                ),
                 "tier": d.tier,
                 "needs_human": d.needs_human,
             },
@@ -209,6 +213,31 @@ def step_prepare(sc: StepContext) -> dict[str, Any]:
         "governing_law": doc.governing_law,
         # Signing date extraction lands with the T1 classifier; review law as of today.
         "as_of": date.today().isoformat(),
+    }
+
+
+def step_bilingual(sc: StepContext) -> dict[str, Any]:
+    """VI–EN discrepancies between the two language versions of each clause (ADR-023)."""
+    doc = sc.session.get(Document, sc.run.document_id)
+    clauses = _clauses(sc)
+    other = next((c.lang_alt for c in clauses if c.lang_alt), None)
+    if doc is None or doc.bilingual_layout == "single" or other is None:
+        return {"skipped": "not a bilingual document", "findings": 0}
+    ctx, rctx = _agent_ctx(sc)
+    langs = (doc.primary_language or "vi", other)
+    pairs = [
+        ClausePair(c.idx, c.taxonomy_key, c.heading, c.text, c.text_alt)
+        for c in clauses
+        if c.heading != "Preamble"
+    ]
+    drafts = check_bilingual(ctx, pairs, langs)
+    ids = {c.idx: c.id for c in clauses}
+    for d in drafts:
+        _add_finding(sc, d, ids)
+    return {
+        "findings": len(drafts),
+        "layout": doc.bilingual_layout,
+        "cost_usd": cost_of(sc.session, rctx.decision_ids),
     }
 
 
@@ -380,6 +409,7 @@ def step_memo(sc: StepContext) -> dict[str, Any]:
 
 STEPS: dict[str, StepFn] = {
     "prepare": step_prepare,
+    "bilingual": step_bilingual,
     "compare": step_compare,
     "lawcheck": step_lawcheck,
     "redline": step_redline,

@@ -201,6 +201,7 @@ class FindingOut(BaseModel):
     edited_text: str | None
     reason_code: str | None
     note: str | None
+    evidence: dict[str, Any] | None = None
     citations: list[CitationOut] = Field(default_factory=list)
 
 

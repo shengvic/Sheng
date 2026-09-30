@@ -21,6 +21,7 @@ const CLASS_LABEL: Record<Finding["classification"], string> = {
   non_standard: "Non-standard",
   missing: "Missing",
   legal_note: "Legal note",
+  discrepancy: "VI/EN mismatch",
 };
 
 export interface FindingCardProps {
