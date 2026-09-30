@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 from travo_api.auth import mint_dev_token
-from travo_api.config import get_settings
+from travo_api.config import check_production, get_settings
 from travo_api.crypto import new_dek
 from travo_api.db import get_admin_engine, set_tenant
 from travo_api.keys import get_kms
@@ -86,6 +86,7 @@ def main() -> None:
     lf.add_argument("--only", action="append", help="instrument id, e.g. SG/UCTA1977")
     lf.add_argument("--offline", action="store_true", help="re-parse stored snapshots only")
     lf.add_argument("--out", default="out/legal")
+    sub.add_parser("migrate", help="apply migrations and ensure the app login role (deploy)")
     li = sub.add_parser("legal-import", help="store a supplied official file as a snapshot")
     li.add_argument("file")
     li.add_argument("--id", required=True, dest="instrument", help="manifest id, e.g. MY/ACT136")
@@ -114,6 +115,8 @@ def main() -> None:
         )
     elif args.cmd == "legal-fetch":
         legal_fetch(args.jurisdiction, args.only, args.offline, args.out)
+    elif args.cmd == "migrate":
+        migrate()
     elif args.cmd == "legal-import":
         snap = legal_import(args.file, args.instrument, args.url)
         print(f"{args.instrument}: stored {snap.path} (sha256 {snap.sha256[:12]}…)")
@@ -128,8 +131,40 @@ def main() -> None:
         print(f"loaded {ingest_legal(args.path)} legal units")
 
 
+def migrate() -> None:
+    """Deploy step: alembic upgrade head on the owner connection, then create/update the app
+    login role named in TRAVO_DATABASE_URL (its password comes from that URL, never a file)."""
+    from pathlib import Path
+
+    import psycopg
+    from alembic import command
+    from alembic.config import Config
+    from psycopg import sql
+    from sqlalchemy.engine import make_url
+
+    s = get_settings()
+    check_production(s)
+    ini = Path(__file__).resolve().parents[1] / "alembic.ini"
+    cfg = Config(str(ini))
+    cfg.set_main_option("sqlalchemy.url", s.admin_database_url.replace("%", "%%"))
+    command.upgrade(cfg, "head")
+    app = make_url(s.database_url)
+    if not app.username or not app.password:
+        raise SystemExit("TRAVO_DATABASE_URL must include the app role's user and password")
+    role, password = sql.Identifier(app.username), sql.Literal(app.password)
+    admin = make_url(s.admin_database_url).set(drivername="postgresql")
+    with psycopg.connect(admin.render_as_string(hide_password=False)) as conn:
+        exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (app.username,))
+        verb = "ALTER" if exists.fetchone() else "CREATE"
+        conn.execute(sql.SQL(verb + " ROLE {} LOGIN PASSWORD {}").format(role, password))
+        conn.execute(sql.SQL("GRANT travo_app TO {}").format(role))
+    print(f"migrations applied; role {app.username} ready")
+
+
 def run_worker(once: bool, poll: float) -> None:
     import time
+
+    check_production(get_settings())
 
     from travo_api.reviews import runner
     from travo_api.workflows import worker_id

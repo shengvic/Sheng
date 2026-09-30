@@ -188,14 +188,16 @@ def main() -> None:
     p.add_argument("--client-id", default="travo-web")
     p.add_argument("--client-secret")
     p.add_argument("--user", action="append", default=[], help="email (repeatable)")
+    p.add_argument("--issuer", help="public issuer URL (default http://localhost:PORT)")
+    p.add_argument("--host", default="127.0.0.1")
     a = p.parse_args()
-    issuer = f"http://localhost:{a.port}"
+    issuer = a.issuer or f"http://localhost:{a.port}"
     users = {
         u.lower(): "mock|" + hashlib.sha256(u.lower().encode()).hexdigest()[:16] for u in a.user
     }
     uvicorn.run(
         create_app(MockIdP(issuer, a.client_id, a.client_secret, users)),
-        host="127.0.0.1",
+        host=a.host,
         port=a.port,
         log_level="warning",
     )

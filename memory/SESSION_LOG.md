@@ -12,6 +12,22 @@ Template:
 
 ---
 
+## 2026-09-30 — Pilot deployment packaging for the existing Coolify VPS (V6)
+- **Done:**
+  - **Deploy files:** `deploy/` — Dockerfile.api (api + worker, non-root, healthcheck, `migrate` on start), Dockerfile.web (Next standalone), docker-compose.coolify.yml (only `web` public), backup.sh, .env.example.
+  - **Production guard:** `TRAVO_ENV=production` refuses to start with unsafe settings (dev tokens, inline reviews, unverified sources allowed, bad master key or JWT secret, default DB passwords).
+  - **https-only identity providers** in production.
+  - **New command:** `travo migrate`, which runs alembic and creates/updates the app role from `TRAVO_DATABASE_URL`.
+  - **Smoke test:** `scripts/deploy_smoke.py` + `deploy/smoke.override.yml`. The stack built from these files passed locally: SSO, CSP, CSRF, and a review completed by the worker.
+  - Runbook `docs/runbooks/deploy-coolify.md`. Tests: 142 pytest, 26 vitest, 6 e2e.
+- **Next:**
+  1. The user grants SSH/Coolify access → deploy per the runbook.
+  2. V1 VN corpus (needs the VN legal domains allowed, or scrape on the VPS).
+  3. V3 bilingual review.
+- **Open threads:**
+  - Coolify's native backups for compose-embedded databases `[verify]`; the scheduled task + host rclone crypt is the documented path.
+  - Sign-in rate limiting and a pen test before paid launch.
+
 ## 2026-09-30 — Vietnam pilot decisions (economical MVP)
 - **Done:**
   - Recorded the founder's decisions: Coolify on a Contabo VPS; legal materials scraped from official VN sites; launch scope NDA / commercial contracts / services / DPA.

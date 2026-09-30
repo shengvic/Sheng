@@ -1,0 +1,82 @@
+# Travo MVP pilot on Coolify (ADR-022, docs/runbooks/deploy-coolify.md).
+# In Coolify: Docker Compose build pack, base directory "/", compose file
+# "/deploy/docker-compose.coolify.yml". Only `web` gets a domain; api and postgres stay on the
+# private network. Every ${VAR:?} must be set in Coolify's environment variables.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: travo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - backups:/backups
+      - appdata:/appdata:ro  # read-only, for backup.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d travo"]
+      interval: 5s
+      retries: 30
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    environment: &api-env
+      TRAVO_ENV: production
+      TRAVO_DATABASE_URL: postgresql+psycopg://travo_api:${TRAVO_APP_DB_PASSWORD:?set TRAVO_APP_DB_PASSWORD}@postgres:5432/travo
+      TRAVO_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/travo
+      TRAVO_MASTER_KEY: ${TRAVO_MASTER_KEY:?set TRAVO_MASTER_KEY}
+      TRAVO_JWT_SECRET: ${TRAVO_JWT_SECRET:?set TRAVO_JWT_SECRET}
+      TRAVO_JWT_ISSUER: travo
+      TRAVO_ALLOW_DEV_TOKENS: "false"
+      TRAVO_INLINE_REVIEWS: "false"
+      TRAVO_REQUIRE_VERIFIED_SOURCES: "true"
+      TRAVO_REGION_CELL: ${TRAVO_REGION_CELL:-VN}
+      TRAVO_FETCH_CONTACT: ${TRAVO_FETCH_CONTACT:-}
+      # Model provider keys: an endpoint in config/endpoints.yaml is enabled only if its key is set.
+      TRAVO_FIREWORKS_API_KEY: ${TRAVO_FIREWORKS_API_KEY:-}
+      TRAVO_OPENROUTER_API_KEY: ${TRAVO_OPENROUTER_API_KEY:-}
+    volumes:
+      - appdata:/data
+      - backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    command: ["python", "-m", "travo_api.cli", "worker"]
+    environment: *api-env
+    volumes:
+      - appdata:/data
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      TRAVO_API_URL: http://api:8000
+      # The public https origin, e.g. https://app.example.vn (OIDC redirect_uri is built from it).
+      TRAVO_PUBLIC_URL: ${TRAVO_PUBLIC_URL:?set TRAVO_PUBLIC_URL}
+    expose:
+      - "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  appdata:
+  backups:

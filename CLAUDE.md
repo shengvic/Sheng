@@ -71,7 +71,9 @@ config/           endpoints.yaml, default_policy.yaml, review.yaml, playbooks/*.
 evals/            gold/nda (synthetic), harness.py, make_gold.py
 tests/            pytest; ephemeral Postgres 16; fixtures/legal_fixture.jsonl (NOT real law)
 scripts/          create_app_role.sql, e2e.sh (Postgres + mock IdP + API + next dev + Playwright),
-                  mock_oidc.py (test-only OIDC provider)
+                  mock_oidc.py (test-only OIDC provider), deploy_smoke.py (compose stack smoke test)
+deploy/           Dockerfile.api (api + worker), Dockerfile.web, docker-compose.coolify.yml,
+                  smoke.override.yml (TEST ONLY), backup.sh, .env.example — ADR-022
 apps/web          Next.js 16: src/app (pages; auth/* + api/[...path] BFF route handlers; admin),
                   src/proxy.ts (CSP nonce, login redirect), src/components, src/lib (api client,
                   types mirroring schemas.py, csrf/pkce/csp + vitest), e2e/
@@ -95,6 +97,7 @@ make dev-token                       # demo tenant + partner token (dev sign-in 
 make web-dev                         # Next on :3000 with TRAVO_DEV_LOGIN=true; BFF → TRAVO_API_URL
 make mock-idp                        # local OIDC provider on :8791 (then `cli configure-idp`)
 make e2e                             # full browser flow (needs Postgres binaries + Chromium)
+make deploy-smoke                    # build images + run the Coolify compose stack with a mock IdP
 PYTHONPATH=services/api:services/rag:services/router:services/agents \
   uv run python -m travo_api.cli bootstrap-tenant "Firm" admin@firm.test   # then mint-token
 ```
@@ -121,6 +124,9 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
   calls `/api/*` and `/auth/*` (same origin) and never holds a bearer token: it lives in the
   httpOnly `travo_session` cookie. Writes need the `X-Travo-CSRF: 1` header. Use `localhost`, not
   `127.0.0.1`, for `next dev`. Next 16 calls middleware `proxy.ts`.
+- Deploy: `TRAVO_ENV=production` makes unsafe settings a startup failure (`production_problems()`)
+  and requires https identity providers. Only `web` is public; `api` runs `travo migrate` on start
+  (creates the app role from `TRAVO_DATABASE_URL`). Runbook: `docs/runbooks/deploy-coolify.md`.
 - Sign-in: the API maps IdP identities to existing users only (no JIT); cross-firm lookups only
   via `idp_for_email_domain()` / `idp_by_id()`. `TRAVO_ALLOW_DEV_TOKENS` must be false in any
   deployment with client data (ADR-018).

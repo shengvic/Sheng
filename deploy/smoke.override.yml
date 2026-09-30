@@ -1,0 +1,31 @@
+# TEST ONLY — never deploy. Local smoke test of the Coolify compose stack
+# (scripts/deploy_smoke.py): prebuilt images, published ports, http cookies, and a mock IdP.
+services:
+  api:
+    image: ${API_IMAGE:-travo-api:smoke}
+    environment:
+      TRAVO_OIDC_ALLOW_HTTP: "true"
+  worker:
+    image: ${API_IMAGE:-travo-api:smoke}
+  web:
+    image: ${WEB_IMAGE:-travo-web:smoke}
+    ports: ["3000:3000"]
+    environment:
+      TRAVO_INSECURE_COOKIES: "true"
+  idp:
+    image: ${API_IMAGE:-travo-api:smoke}
+    command:
+      - python
+      - -m
+      - scripts.mock_oidc
+      - --host=0.0.0.0
+      - --port=8791
+      - --issuer=http://idp:8791
+      - --client-id=travo-web
+      - --client-secret=smoke-secret
+      - --user=admin@smoke.test
+    volumes:
+      - ../scripts:/app/scripts:ro
+    ports: ["8791:8791"]
+    healthcheck:
+      disable: true

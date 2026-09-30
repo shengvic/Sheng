@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from travo_api.config import check_production, get_settings
 from travo_api.routes import admin, auth, documents, findings, matters, me, playbooks, reviews
 
 
 def create_app() -> FastAPI:
+    check_production(get_settings())
     app = FastAPI(title="Travo API", version="0.1.0-p1")
     app.include_router(auth.router)
     app.include_router(me.router)

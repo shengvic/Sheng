@@ -2,7 +2,7 @@ PY_PATH := services/api:services/rag:services/router:services/agents:.
 export PYTHONPATH := $(PY_PATH)
 
 .PHONY: install lint fmt typecheck test eval db-up db-migrate dev check worker ingest-legal \
-	web-install web-dev web-check e2e dev-token mock-idp legal-fetch legal-verify legal-import
+	web-install web-dev web-check e2e dev-token mock-idp legal-fetch legal-verify legal-import deploy-images deploy-smoke
 
 install:
 	uv sync
@@ -73,3 +73,13 @@ dev-token:
 # Test-only OIDC provider for local SSO: users via MOCK_USERS="a@firm.test b@firm.test"
 mock-idp:
 	uv run python -m scripts.mock_oidc --port 8791 --client-id travo-web $(foreach u,$(MOCK_USERS),--user $(u))
+
+# Pilot deployment (docs/runbooks/deploy-coolify.md): build the images Coolify builds, then run
+# the compose stack locally with a mock IdP and check sign-in + a full review by the worker.
+deploy-images:
+	docker build -f deploy/Dockerfile.api -t travo-api:smoke .
+	docker build -f deploy/Dockerfile.web -t travo-web:smoke .
+
+deploy-smoke: deploy-images
+	uv run python scripts/deploy_smoke.py
+

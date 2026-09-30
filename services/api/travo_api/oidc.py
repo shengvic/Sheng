@@ -13,6 +13,8 @@ from typing import Any
 import httpx
 import jwt
 
+from travo_api.config import get_settings
+
 ALGORITHMS = ["RS256", "ES256", "PS256"]
 _TTL = 3600.0
 _discovery: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -33,10 +35,22 @@ def clear_caches() -> None:
     _jwks.clear()
 
 
+def _allowed_schemes() -> tuple[str, ...]:
+    """Production talks to identity providers over https only; http is for dev and the mock IdP
+    (or an explicit, test-only TRAVO_OIDC_ALLOW_HTTP)."""
+    s = get_settings()
+    if s.env == "production" and not s.oidc_allow_http:
+        return ("https://",)
+    return ("https://", "http://")
+
+
 def discovery(issuer: str) -> dict[str, Any]:
     cached = _discovery.get(issuer)
     if cached and time.monotonic() - cached[0] < _TTL:
         return cached[1]
+    schemes = _allowed_schemes()
+    if not issuer.startswith(schemes):
+        raise OidcError("issuer must use https")
     url = issuer.rstrip("/") + "/.well-known/openid-configuration"
     try:
         doc = get_http().get(url).raise_for_status().json()
@@ -45,8 +59,8 @@ def discovery(issuer: str) -> dict[str, Any]:
     if doc.get("issuer") != issuer:
         raise OidcError("discovery issuer mismatch")
     for key in ("authorization_endpoint", "token_endpoint", "jwks_uri"):
-        if not str(doc.get(key, "")).startswith(("https://", "http://")):
-            raise OidcError(f"discovery missing {key}")
+        if not str(doc.get(key, "")).startswith(schemes):
+            raise OidcError(f"discovery missing {key} (or not https)")
     _discovery[issuer] = (time.monotonic(), doc)
     return doc
 
