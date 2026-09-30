@@ -82,9 +82,10 @@ def site(pages: dict[str, tuple[int, bytes]], robots: tuple[int, str] = (200, ""
 
 def test_shipped_manifests_are_valid():
     ms = load_manifests(ROOT / "config" / "legal_sources")
-    assert set(ms) == {"SG", "MY"}
+    assert set(ms) == {"SG", "MY", "VN"}
     assert all(i.url for i in ms["SG"].instruments)
     assert all(i.url is None for i in ms["MY"].instruments)  # never guessed
+    assert all(i.url is None for i in ms["VN"].instruments)  # until vbpl.vn is reachable
 
 
 def test_manifest_rejects_duplicates_and_wrong_prefix():
