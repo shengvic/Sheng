@@ -55,6 +55,7 @@ class LegalUnitHit:
     effective_to: date | None
     is_fixture: bool
     score: float = 0.0
+    review_status: str = "unverified"
 
     @property
     def pinpoint(self) -> str:
@@ -82,7 +83,7 @@ def _in_force(as_of: date) -> str:
 
 _SELECT = (
     "SELECT u.id, u.source_id, s.title, u.unit_path, u.heading, u.text, u.status,"
-    " u.effective_from, u.effective_to, s.is_fixture"
+    " u.effective_from, u.effective_to, s.is_fixture, s.review_status"
 )
 
 
@@ -95,7 +96,10 @@ def search(
     k: int = 5,
     rerank_with: str | None = None,
     dense: DenseRetriever | None = None,
+    require_verified: bool = False,
 ) -> list[LegalUnitHit]:
+    """`require_verified` limits results to sources a lawyer has checked (ADR-019); pilots
+    run with it on."""
     words = terms(query)[:24]
     if not words or not jurisdictions:
         return []
@@ -106,13 +110,16 @@ def search(
             " FROM legal_units u JOIN legal_sources s ON s.id = u.source_id"
             " WHERE u.tsv @@ to_tsquery('simple', :q) AND s.jurisdiction = ANY(:j)"
             f" AND {_in_force(as_of)}"
-            " ORDER BY rank DESC LIMIT :n"
+            + (" AND s.review_status = 'verified'" if require_verified else "")
+            + " ORDER BY rank DESC LIMIT :n"
         ),
         {"q": tsquery, "j": jurisdictions, "as_of": as_of, "n": k * 4},
     ).all()
-    hits = [_hit(r[:10], float(r[10])) for r in rows]
+    hits = [_hit(r[:11], float(r[11])) for r in rows]
     if dense is not None:
-        hits = _rrf(hits, dense.search(query, jurisdictions, k * 4), session, as_of)
+        hits = _rrf(
+            hits, dense.search(query, jurisdictions, k * 4), session, as_of, require_verified
+        )
     if rerank_with:
         hits = rerank(rerank_with, hits)
     return hits[:k]
@@ -155,6 +162,7 @@ def _hit(r: Any, score: float = 0.0) -> LegalUnitHit:
         effective_from=r[7],
         effective_to=r[8],
         is_fixture=r[9],
+        review_status=r[10],
         score=score,
     )
 
@@ -168,7 +176,11 @@ def is_in_force(unit: LegalUnitHit, as_of: date) -> bool:
 
 
 def _rrf(
-    lexical: list[LegalUnitHit], dense_ids: list[str], session: Session, as_of: date
+    lexical: list[LegalUnitHit],
+    dense_ids: list[str],
+    session: Session,
+    as_of: date,
+    require_verified: bool = False,
 ) -> list[LegalUnitHit]:
     scores: dict[str, float] = {}
     by_id = {h.id: h for h in lexical}
@@ -178,6 +190,10 @@ def _rrf(
         scores[uid] = scores.get(uid, 0) + 1 / (60 + rank)
         if uid not in by_id:
             unit = get_unit(session, uid)
-            if unit and is_in_force(unit, as_of):
+            if (
+                unit
+                and is_in_force(unit, as_of)
+                and (not require_verified or unit.review_status == "verified")
+            ):
                 by_id[uid] = unit
     return [by_id[i] for i in sorted(scores, key=lambda i: -scores[i]) if i in by_id]

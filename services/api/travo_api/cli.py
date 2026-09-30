@@ -77,6 +77,15 @@ def main() -> None:
     c.add_argument("client_id")
     c.add_argument("--domain", action="append", required=True)
     c.add_argument("--client-secret")
+    lf = sub.add_parser("legal-fetch", help="fetch + parse official statutes (docs/04 §9)")
+    lf.add_argument("--jurisdiction", "-j", action="append", help="SG, MY (default: all)")
+    lf.add_argument("--only", action="append", help="instrument id, e.g. SG/UCTA1977")
+    lf.add_argument("--offline", action="store_true", help="re-parse stored snapshots only")
+    lf.add_argument("--out", default="out/legal")
+    lv = sub.add_parser("legal-verify", help="record a lawyer's check of a legal source")
+    lv.add_argument("source_id")
+    lv.add_argument("--by", required=True, help="reviewing lawyer's email")
+    lv.add_argument("--note")
     i = sub.add_parser("ingest-legal")
     i.add_argument("path")
     args = p.parse_args()
@@ -95,6 +104,12 @@ def main() -> None:
                 args.tenant_id, args.issuer, args.client_id, args.domain, args.client_secret
             )
         )
+    elif args.cmd == "legal-fetch":
+        legal_fetch(args.jurisdiction, args.only, args.offline, args.out)
+    elif args.cmd == "legal-verify":
+        if not legal_verify(args.source_id, args.by, args.note):
+            raise SystemExit(f"unknown legal source {args.source_id}")
+        print(f"{args.source_id} marked verified by {args.by}")
     elif args.cmd == "worker":
         run_worker(args.once, args.poll)
     else:
@@ -169,6 +184,45 @@ def configure_idp(
         for d in sorted({d.lower().strip() for d in domains}):
             s.add(IdpDomain(domain=d, idp_id=row.id, tenant_id=row.tenant_id))
         return str(row.id)
+
+
+def legal_fetch(
+    jurisdictions: list[str] | None, only: list[str] | None, offline: bool, out: str
+) -> None:
+    import os
+    from pathlib import Path
+
+    import httpx
+    from travo_rag.sources.fetch import PoliteFetcher, SnapshotStore
+    from travo_rag.sources.manifest import load_manifests
+    from travo_rag.sources.pipeline import run, write_outputs
+
+    s = get_settings()
+    manifests = load_manifests(s.legal_manifest_dir)
+    wanted = [j.upper() for j in jurisdictions] if jurisdictions else sorted(manifests)
+    contact = os.environ.get("TRAVO_FETCH_CONTACT", "set TRAVO_FETCH_CONTACT")
+    fetcher = None
+    if not offline:
+        fetcher = PoliteFetcher(
+            httpx.Client(timeout=60.0),
+            user_agent=f"TravoLegalFetcher/0.1 (+{contact})",
+        )
+    store = SnapshotStore(s.legal_snapshot_dir)
+    for jur in wanted:
+        if jur not in manifests:
+            raise SystemExit(f"no manifest for {jur}")
+        outcomes = run(manifests[jur], store, fetcher, only=set(only) if only else None)
+        jsonl, report, n = write_outputs(outcomes, jur, Path(out))
+        for o in outcomes:
+            print(f"  {o.id:<16} {o.status:<13} {len(o.units):>4} sections  {o.detail}")
+        print(f"{jur}: {n} units → {jsonl}; review report → {report}")
+
+
+def legal_verify(source_id: str, by: str, note: str | None) -> bool:
+    from travo_rag.legal_index import verify_source
+
+    with get_admin_engine().begin() as conn:
+        return verify_source(conn, source_id, by, note)
 
 
 if __name__ == "__main__":

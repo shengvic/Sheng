@@ -32,10 +32,19 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
         <ErrorNote error={unit.error} />
         {u && (
           <>
-            {u.is_fixture && (
+            {u.is_fixture ? (
               <p className="rounded-md border border-medium/40 bg-medium-soft px-3 py-2 text-xs font-medium text-medium">
                 {t.review.fixture}
               </p>
+            ) : (
+              u.review_status !== "verified" && (
+                <p
+                  className="rounded-md border border-medium/40 bg-medium-soft px-3 py-2 text-xs font-medium text-medium"
+                  data-testid="unverified-source"
+                >
+                  {t.review.unverified}
+                </p>
+              )
             )}
             <div>
               <div className="text-xs uppercase tracking-wide text-muted">{u.jurisdiction}</div>
@@ -49,6 +58,8 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
               <Chip tone={u.status === "in_force" ? "ok" : "bad"}>{u.status.replace("_", " ")}</Chip>
               {u.effective_from && <Chip>from {u.effective_from}</Chip>}
               {u.effective_to && <Chip>to {u.effective_to}</Chip>}
+              {u.review_status === "verified" && <Chip tone="ok">checked by a lawyer</Chip>}
+              {u.retrieved_at && <Chip>retrieved {u.retrieved_at.slice(0, 10)}</Chip>}
             </div>
             <blockquote className="doc-text border-l-2 border-accent pl-3">{u.text}</blockquote>
             {u.official_url && (

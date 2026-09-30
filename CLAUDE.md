@@ -8,10 +8,12 @@ legal sources with per-claim citation checks, and escalates hard sub-tasks to
 frontier models through a **model-agnostic, conflict-aware router**.
 
 ## Current phase
-- **Phase:** P1 — slices 1 (review engine), 2 (review canvas) and 3 (SSO sign-in + admin
-  console) done. P0 infra items (cloud, observability) still open.
-- **Next step:** real legal corpus ingestion; real T1 endpoint + evals; pre-pilot hardening
-  (SCIM, domain verification, rate limits). See `docs/12-roadmap.md` §P1 checklist.
+- **Phase:** P1 — slices 1 (review engine), 2 (review canvas), 3 (SSO sign-in + admin
+  console) and 4 (official-statute pipeline + lawyer verification) done. P0 infra items
+  (cloud, observability) still open.
+- **Next step:** run `legal-fetch` where the SSO/AGC portals are reachable and fix parsers
+  against the real layouts (`docs/runbooks/legal-ingestion.md`); real T1 endpoint + evals;
+  pre-pilot hardening (SCIM, domain verification, rate limits). See `docs/12-roadmap.md`.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -54,11 +56,12 @@ services/api      travo_api    FastAPI app, auth, walls, audit, storage, admin, 
                                workflows.py (durable runner), reviews.py (steps), exports.py
 services/router   travo_router Task descriptor, policy engine, provider adapters, Router
 services/rag      travo_rag    parsing, language ID, segmentation, legal_index, retrieval,
-                               citations (per-claim validator)
+                               citations (per-claim validator), sources/ (manifest, polite
+                               fetch + snapshots, HTML/PDF parsers, review report)
 services/agents   travo_agents taxonomy, classify/extract/compare/lawcheck/redline/memo agents,
                                playbooks + checks, prompts/<task>/v1.md, travo_rules T0 model
 config/           endpoints.yaml, default_policy.yaml, review.yaml, playbooks/*.yaml,
-                  jurisdiction_packs/*.yaml
+                  jurisdiction_packs/*.yaml, legal_sources/{sg,my}.yaml (statute manifests)
 evals/            gold/nda (synthetic), harness.py, make_gold.py
 tests/            pytest; ephemeral Postgres 16; fixtures/legal_fixture.jsonl (NOT real law)
 scripts/          create_app_role.sql, e2e.sh (Postgres + mock IdP + API + next dev + Playwright),
@@ -77,6 +80,8 @@ make eval         # clause/classification scores on gold NDAs
 make db-up db-migrate dev   # local API on :8000 (needs Docker + .env from .env.example)
 make worker       # process queued review runs (or TRAVO_INLINE_REVIEWS=true for dev)
 make ingest-legal FILE=units.jsonl   # load legal units into the shared index (owner conn)
+make legal-fetch JUR=SG [OFFLINE=1]  # fetch + parse statutes → out/legal/SG.jsonl + review report
+make legal-verify SOURCE=SG/UCTA1977 BY=lawyer@firm.sg   # record a lawyer's check
 make web-install web-check           # pnpm install; tsc + eslint + vitest
 make dev-token                       # demo tenant + partner token (dev sign-in form)
 make web-dev                         # Next on :3000 with TRAVO_DEV_LOGIN=true; BFF → TRAVO_API_URL
@@ -99,6 +104,8 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
   transaction — keep steps idempotent under retry.
 - `telemetry_events` is append-only too. Legal text only enters via `ingest-legal`; never write
   statute text by hand (ADR-014). Fixture units are titled "FIXTURE — not law".
+- Real statutes enter only via `legal-fetch` → `ingest-legal` (raw snapshots + sha256). New or
+  changed snapshots are `unverified`; `TRAVO_REQUIRE_VERIFIED_SOURCES=true` in pilots/prod (ADR-019).
 - Few-shot examples are filtered to matters the initiator is a member of (ADR-015).
 - Web: `apps/web/src/lib/types.ts` mirrors `schemas.py` — change both together. The browser only
   calls `/api/*` and `/auth/*` (same origin) and never holds a bearer token: it lives in the

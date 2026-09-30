@@ -1,0 +1,43 @@
+# Malaysian instruments for contract review (ADR-019). Act numbers are from memory [verify].
+# URLs are intentionally empty: paste the official English reprint PDF link from the Laws of
+# Malaysia portal (AGC) for each Act, then run `make legal-fetch JUR=MY`. Entries without a URL
+# are reported as "needs_url", never guessed.
+jurisdiction: MY
+issuing_body: Attorney General's Chambers of Malaysia (Laws of Malaysia)
+instruments:
+  - id: MY/ACT136
+    title: Contracts Act 1950 (Act 136)
+    number: "136"
+    url: null
+    format: pdf
+    expect_title: Contracts Act 1950
+  - id: MY/ACT709
+    title: Personal Data Protection Act 2010 (Act 709)
+    number: "709"
+    url: null
+    format: pdf
+    expect_title: Personal Data Protection Act 2010
+  - id: MY/ACT646
+    title: Arbitration Act 2005 (Act 646)
+    number: "646"
+    url: null
+    format: pdf
+    expect_title: Arbitration Act 2005
+  - id: MY/ACT137
+    title: Specific Relief Act 1950 (Act 137)
+    number: "137"
+    url: null
+    format: pdf
+    expect_title: Specific Relief Act 1950
+  - id: MY/ACT254
+    title: Limitation Act 1953 (Act 254)
+    number: "254"
+    url: null
+    format: pdf
+    expect_title: Limitation Act 1953
+  - id: MY/ACT658
+    title: Electronic Commerce Act 2006 (Act 658)
+    number: "658"
+    url: null
+    format: pdf
+    expect_title: Electronic Commerce Act 2006

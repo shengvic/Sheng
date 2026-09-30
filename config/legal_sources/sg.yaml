@@ -1,0 +1,46 @@
+# Singapore instruments for contract review (ADR-019). Titles, numbers and URLs are from memory
+# and must be checked [verify]; the fetcher refuses any page whose text lacks `expect_title`.
+# Re-use of SSO content is subject to its terms of use [verify] — see docs/13 Q2.
+jurisdiction: SG
+issuing_body: Attorney-General's Chambers, Singapore (Singapore Statutes Online)
+instruments:
+  - id: SG/UCTA1977
+    title: Unfair Contract Terms Act 1977
+    url: https://sso.agc.gov.sg/Act/UCTA1977
+    format: sso_html
+    expect_title: Unfair Contract Terms Act
+  - id: SG/PDPA2012
+    title: Personal Data Protection Act 2012
+    url: https://sso.agc.gov.sg/Act/PDPA2012
+    format: sso_html
+    expect_title: Personal Data Protection Act
+  - id: SG/MA1967
+    title: Misrepresentation Act 1967
+    url: https://sso.agc.gov.sg/Act/MA1967
+    format: sso_html
+    expect_title: Misrepresentation Act
+  - id: SG/CRTPA2001
+    title: Contracts (Rights of Third Parties) Act 2001
+    url: https://sso.agc.gov.sg/Act/CRTPA2001
+    format: sso_html
+    expect_title: Contracts (Rights of Third Parties) Act
+  - id: SG/IAA1994
+    title: International Arbitration Act 1994
+    url: https://sso.agc.gov.sg/Act/IAA1994
+    format: sso_html
+    expect_title: International Arbitration Act
+  - id: SG/AA2001
+    title: Arbitration Act 2001
+    url: https://sso.agc.gov.sg/Act/AA2001
+    format: sso_html
+    expect_title: Arbitration Act
+  - id: SG/LA1959
+    title: Limitation Act 1959
+    url: https://sso.agc.gov.sg/Act/LA1959
+    format: sso_html
+    expect_title: Limitation Act
+  - id: SG/ETA2010
+    title: Electronic Transactions Act 2010
+    url: https://sso.agc.gov.sg/Act/ETA2010
+    format: sso_html
+    expect_title: Electronic Transactions Act

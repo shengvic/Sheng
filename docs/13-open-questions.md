@@ -1,6 +1,6 @@
 # 13 — Open Questions (need founder decisions)
 
-> **Status:** Open · **Last updated:** 2026-09-29
+> **Status:** Open · **Last updated:** 2026-09-30
 >
 > When a question is answered, record the decision in `memory/DECISIONS.md` and strike it here.
 
@@ -16,3 +16,4 @@
 | Q8 | Default consent for firm-private training (on) acceptable to design partners? | On, tenant-private; global opt-in only | 07 |
 | Q9 | Company entity / data controller location (SG Pte Ltd?) | SG entity | 06 |
 | Q10 | Brand: product name "Travo" cleared for trademark in SG/MY/VN/ID? | Pending search | — |
+| Q11 | Do SSO (AGC Singapore) and AGC Malaysia terms of use allow storing snapshots and serving statute text inside a commercial product? Any attribution wording required? `[verify]` | Store raw snapshots privately, show official URL + retrieval date, attribute the issuing body; confirm before pilots | 04, 06 |

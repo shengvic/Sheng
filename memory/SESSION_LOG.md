@@ -12,6 +12,27 @@ Template:
 
 ---
 
+## 2026-09-30 — P1 slice 4: official-statute pipeline + lawyer verification
+- **Done:**
+  - **Manifests:** `config/legal_sources/{sg,my}.yaml` with 8 SG instruments (SSO HTML) and 6 MY instruments (AGC PDF, `url: null` until filled).
+  - **Pipeline (`travo_rag.sources`):**
+    - polite fetcher (robots.txt, rate limit, retries, size cap);
+    - immutable raw snapshots with sha256 metadata;
+    - HTML/PDF parsers with a shared section splitter;
+    - title and minimum-section guards;
+    - JSONL plus a Markdown review report.
+  - **Verification:** migration 0004 adds provenance and `review_status` to `legal_sources`. A new snapshot resets verification. `legal-verify` CLI. `TRAVO_REQUIRE_VERIFIED_SOURCES` retrieval filter. The sources drawer shows "Not yet checked by a lawyer" and the retrieval date. The API returns status and provenance.
+  - **Docs:** runbook `docs/runbooks/legal-ingestion.md`; docs/04 §9; Q11 (terms of use).
+- **Decisions:** ADR-019.
+- **Next:**
+  1. On a machine with portal access: fill the MY URLs, `make legal-fetch`, fix parsers against the real SSO/AGC layouts, ingest, and have a lawyer run `legal-verify`.
+  2. Real T1 endpoint + evals on real NDAs.
+  3. Pre-pilot hardening: SCIM, domain verification, sign-in rate limits, pen test, cloud.
+- **Open threads:**
+  - Parsers are tested only on synthetic pages; the real layouts are `[verify]`.
+  - HTML chrome changes will force re-verification; consider hashing the extracted text as well.
+  - Terms of use (Q11) are still open.
+
 ## 2026-09-29 — P1 slice 3: SSO sign-in + admin console
 - **Done:** Per-firm OIDC sign-in (auth code + PKCE; API-side code exchange and id_token validation; subject binding; no JIT), revocable server-side sessions, global one-firm-per-domain rule, SECURITY DEFINER sign-in lookups, dev tokens gated by `TRAVO_ALLOW_DEV_TOKENS`. Web: Next BFF (`/auth/*`, `/api/*` proxy adding the token from an httpOnly cookie), CSRF header + Origin checks, per-request nonce CSP in `proxy.ts`, new login page, admin console (model policy editor + dry-run, BYO keys, spend bars, audit, SSO settings + sessions). Mock OIDC provider (`scripts/mock_oidc.py`) for pytest and e2e; `configure-idp` CLI. Tests: 117 pytest, 26 vitest, 6 Playwright specs (SSO review flow, admin flow, CSP header + no CSP violations, CSRF refusal, partner denied admin, dev-token path).
 - **Decisions:** ADR-018 (supersedes ADR-017's auth).

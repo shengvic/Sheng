@@ -101,3 +101,20 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
 - **Context:** ADR-017's pasted dev token in `sessionStorage` is unacceptable for client data. Each firm has its own IdP (Entra ID, Google, Okta).
 - **Decision:** Per-firm OIDC config (`tenant_idps`, one firm per email domain via `idp_domains` PK). Auth code + PKCE; the API performs discovery, code exchange (client secret encrypted with the firm DEK) and id_token validation, maps to an existing user (bind `idp_subject` on first login, no JIT), and issues a session token backed by a revocable `auth_sessions` row. The Next.js BFF keeps it in an httpOnly cookie and adds it server-side on `/api/*`; CSRF header + Origin check on writes; per-request nonce CSP via `proxy.ts`. Sign-in lookups across firms only through two SECURITY DEFINER functions (role `travo_idp_lookup`). Dev tokens remain for local work, gated by `TRAVO_ALLOW_DEV_TOKENS` (must be false in deployments) and the web `TRAVO_DEV_LOGIN` flag.
 - **Consequences:** The browser never sees a bearer token; sessions can be revoked centrally. Every API call does one extra session lookup. Still open: SCIM, domain verification, sign-in rate limiting, IdP-initiated logout.
+
+## ADR-019 — Official-source snapshots, provenance and a lawyer verification gate
+- **Date:** 2026-09-30 · **Status:** Accepted
+- **Context:** Law checks need real SG/MY statutes. ADR-014 forbids hand-written statute text. The portals cannot be reached from the dev environment, and parsed text can be wrong even when it is fetched correctly.
+- **Decision:**
+  - Statutes enter only through a manifest-driven pipeline (`travo_rag.sources`):
+    - a polite fetcher (robots.txt, rate limit, retries, size cap, contact User-Agent);
+    - immutable raw snapshots with sha256 metadata, kept out of git;
+    - parsers with guards (title check, minimum sections);
+    - JSONL plus a Markdown review report, then `ingest-legal`.
+  - `legal_sources` records `snapshot_sha256`, `retrieved_at` and `review_status`. New or changed snapshots are `unverified`. A lawyer marks a source `verified` with `legal-verify`.
+  - `TRAVO_REQUIRE_VERIFIED_SOURCES=true` (mandatory for pilots and production) limits retrieval to verified sources. The UI labels unverified sources.
+- **Consequences:**
+  - Real text needs a lawyer's sign-off before it can support a claim; until then findings go to human review.
+  - HTML chrome changes force re-verification.
+  - Manifest URLs and portal layouts are `[verify]`, and MY PDF URLs must be filled in.
+  - Terms of use are open (Q11).

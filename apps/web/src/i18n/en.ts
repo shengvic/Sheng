@@ -61,6 +61,8 @@ export const t = {
     gateOpen: "All issues resolved — ready to export.",
     gateBlocked: "Resolve these before export:",
     fixture: "Test fixture — not real law. Do not rely on this text.",
+    unverified:
+      "Official text, not yet checked by a lawyer at Travo against the source. Confirm before relying on it.",
     override: "Override check",
     overrideReason: "Why is this citation acceptable? (min 10 characters)",
     shortcuts: "Keyboard shortcuts",

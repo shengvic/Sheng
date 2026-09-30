@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -32,6 +32,9 @@ class SourceIn(BaseModel):
     language: str = "en"
     official_url: str | None = None
     is_fixture: bool = False
+    # Provenance of the official snapshot this unit was parsed from (ADR-019).
+    snapshot_sha256: str | None = None
+    retrieved_at: datetime | None = None
 
 
 class UnitIn(BaseModel):
@@ -66,11 +69,21 @@ def upsert_units(conn: Connection, units: Iterable[UnitIn]) -> int:
         conn.execute(
             text(
                 "INSERT INTO legal_sources (id, jurisdiction, instrument_type, number, title,"
-                " issuing_body, language, official_url, is_fixture)"
+                " issuing_body, language, official_url, is_fixture, snapshot_sha256, retrieved_at)"
                 " VALUES (:id, :jurisdiction, :instrument_type, :number, :title, :issuing_body,"
-                " :language, :official_url, :is_fixture)"
+                " :language, :official_url, :is_fixture, :snapshot_sha256, :retrieved_at)"
                 " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title,"
-                " official_url = EXCLUDED.official_url, is_fixture = EXCLUDED.is_fixture"
+                " official_url = EXCLUDED.official_url, is_fixture = EXCLUDED.is_fixture,"
+                # A different official snapshot needs a fresh lawyer check.
+                " review_status = CASE WHEN legal_sources.snapshot_sha256 IS DISTINCT FROM"
+                " EXCLUDED.snapshot_sha256 THEN 'unverified'"
+                " ELSE legal_sources.review_status END,"
+                " verified_by = CASE WHEN legal_sources.snapshot_sha256 IS DISTINCT FROM"
+                "   EXCLUDED.snapshot_sha256 THEN NULL ELSE legal_sources.verified_by END,"
+                " verified_at = CASE WHEN legal_sources.snapshot_sha256 IS DISTINCT FROM"
+                "   EXCLUDED.snapshot_sha256 THEN NULL ELSE legal_sources.verified_at END,"
+                " snapshot_sha256 = EXCLUDED.snapshot_sha256,"
+                " retrieved_at = EXCLUDED.retrieved_at"
             ),
             u.source.model_dump(),
         )
@@ -103,3 +116,15 @@ def upsert_units(conn: Connection, units: Iterable[UnitIn]) -> int:
 
 def dump_jsonl(units: Iterable[UnitIn]) -> str:
     return "\n".join(json.dumps(u.model_dump(mode="json"), ensure_ascii=False) for u in units)
+
+
+def verify_source(conn: Connection, source_id: str, by: str, note: str | None) -> bool:
+    """Record that a lawyer checked this source against the official text. Owner connection."""
+    row = conn.execute(
+        text(
+            "UPDATE legal_sources SET review_status = 'verified', verified_by = :by,"
+            " verified_at = now(), verification_note = :note WHERE id = :id RETURNING id"
+        ),
+        {"id": source_id, "by": by, "note": note},
+    ).first()
+    return row is not None

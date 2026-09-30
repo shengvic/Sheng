@@ -169,6 +169,10 @@ export interface LegalUnit {
   effective_to: string | null;
   official_url: string | null;
   is_fixture: boolean;
+  review_status: "unverified" | "verified";
+  verified_at: string | null;
+  retrieved_at: string | null;
+  snapshot_sha256: string | null;
 }
 
 export interface RoutingRow {

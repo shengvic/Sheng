@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Run reviews in the request process right after enqueueing (dev/tests). Production uses
     # `travo worker`.
     inline_reviews: bool = False
+    # Law checks use only lawyer-verified legal sources (ADR-019). Required for pilots.
+    require_verified_sources: bool = False
+    # Raw official snapshots fetched by `legal-fetch` (kept out of git; licensing).
+    legal_snapshot_dir: Path = ROOT / ".data" / "legal_snapshots"
+    legal_manifest_dir: Path = ROOT / "config" / "legal_sources"
     region_cell: str = "SG"
     max_upload_bytes: int = 25 * 1024 * 1024
 

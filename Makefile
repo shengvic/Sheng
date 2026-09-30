@@ -2,7 +2,7 @@ PY_PATH := services/api:services/rag:services/router:services/agents:.
 export PYTHONPATH := $(PY_PATH)
 
 .PHONY: install lint fmt typecheck test eval db-up db-migrate dev check worker ingest-legal \
-	web-install web-dev web-check e2e dev-token mock-idp
+	web-install web-dev web-check e2e dev-token mock-idp legal-fetch legal-verify
 
 install:
 	uv sync
@@ -41,6 +41,14 @@ worker:
 
 ingest-legal:
 	uv run python -m travo_api.cli ingest-legal $(FILE)
+
+# Fetch + parse official statutes (docs/runbooks/legal-ingestion.md). JUR=SG|MY, OFFLINE=1.
+legal-fetch:
+	uv run python -m travo_api.cli legal-fetch $(if $(JUR),-j $(JUR)) $(if $(OFFLINE),--offline)
+
+# Record a lawyer's check: make legal-verify SOURCE=SG/UCTA1977 BY=lawyer@firm.sg
+legal-verify:
+	uv run python -m travo_api.cli legal-verify $(SOURCE) --by $(BY)
 
 web-install:
 	cd apps/web && pnpm install --frozen-lockfile

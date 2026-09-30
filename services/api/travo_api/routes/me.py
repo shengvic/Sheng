@@ -48,4 +48,8 @@ def legal_unit(unit_id: str, actor: Actor = Depends(get_actor)) -> LegalUnitOut:
         effective_to=unit.effective_to,
         official_url=source.official_url,
         is_fixture=source.is_fixture,
+        review_status=source.review_status,
+        verified_at=source.verified_at,
+        retrieved_at=source.retrieved_at,
+        snapshot_sha256=source.snapshot_sha256,
     )

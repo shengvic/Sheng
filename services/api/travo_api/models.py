@@ -206,6 +206,12 @@ class LegalSource(Base):
     language: Mapped[str] = mapped_column(String(8), default="en")
     official_url: Mapped[str | None] = mapped_column(Text)
     is_fixture: Mapped[bool] = mapped_column(Boolean, default=False)
+    review_status: Mapped[str] = mapped_column(String(12), default="unverified")
+    verified_by: Mapped[str | None] = mapped_column(String(320))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verification_note: Mapped[str | None] = mapped_column(Text)
+    snapshot_sha256: Mapped[str | None] = mapped_column(String(64))
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class LegalUnit(Base):

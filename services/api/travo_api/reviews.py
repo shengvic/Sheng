@@ -242,6 +242,7 @@ def step_lawcheck(sc: StepContext) -> dict[str, Any]:
             as_of=as_of,
             k=3,
             rerank_with=clause_text,
+            require_verified=get_settings().require_verified_sources,
         )
 
     judge, used = router_judge(ctx)

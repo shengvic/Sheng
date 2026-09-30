@@ -35,3 +35,6 @@
 | **Session token** | Travo JWT with a `sid` claim backed by a revocable `auth_sessions` row; lives only in an httpOnly cookie. |
 | **PKCE** | Proof Key for Code Exchange: binds the OIDC authorization code to the client that started sign-in. |
 | **Dev token** | Session-less token from `mint-token`/`dev-token`; only accepted when `TRAVO_ALLOW_DEV_TOKENS=true`. |
+| **Raw snapshot** | Unchanged copy of an official page/PDF as downloaded, with URL, time and sha256 in `.meta.json`. |
+| **Review report** | Markdown output of `legal-fetch` (status, warnings, sample sections) that a legal engineer checks before ingesting. |
+| **Verified source** | A `legal_sources` row a lawyer has checked against the portal (`legal-verify`); resets when the snapshot changes. |

@@ -277,6 +277,10 @@ class LegalUnitOut(BaseModel):
     effective_to: date | None
     official_url: str | None
     is_fixture: bool
+    review_status: str = "unverified"
+    verified_at: datetime | None = None
+    retrieved_at: datetime | None = None
+    snapshot_sha256: str | None = None
 
 
 class ReviewRoutingOut(BaseModel):

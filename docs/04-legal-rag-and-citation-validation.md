@@ -1,6 +1,6 @@
 # 04 — Legal RAG & Per-Claim Citation Validation
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [02](02-system-architecture.md), [05](05-contract-review-workflow.md), [11](11-evaluation-and-quality.md)
+> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [02](02-system-architecture.md), [05](05-contract-review-workflow.md), [11](11-evaluation-and-quality.md)
 
 ## 1. Goal
 Eliminate ungrounded legal assertions. Every legal proposition Travo outputs must
@@ -99,3 +99,47 @@ flowchart TD
 - **Corpus status:** only the test fixture corpus exists (`tests/fixtures/legal_fixture.jsonl`,
   every source titled "FIXTURE — not law"). SG/MY portals were unreachable from the dev
   environment; no statute text was transcribed from memory (ADR-014).
+
+## 9. As built — official-source pipeline and lawyer verification (2026-09-30, ADR-019)
+Pipeline (`services/rag/travo_rag/sources/`), run with `travo_api.cli legal-fetch`:
+1. **Manifest** — `config/legal_sources/{sg,my}.yaml` lists instruments (id `SG/UCTA1977`, title,
+   official URL or `null`, format `sso_html` | `pdf` | `text`, `expect_title`). URLs are
+   `[verify]`; entries with `url: null` are reported as `needs_url`, never guessed.
+2. **Polite fetch** — honours robots.txt (a 5xx or unreachable robots.txt means *do not fetch*),
+   ≥ 2 s between requests, retries 429/5xx with backoff, 30 MB cap, and a User-Agent with
+   contact details (`TRAVO_FETCH_CONTACT`).
+3. **Raw snapshots** — every download is stored unchanged under `TRAVO_LEGAL_SNAPSHOT_DIR`
+   (`.data/legal_snapshots/<id>/<timestamp>.<ext>` + `.meta.json` with URL, sha256, time,
+   content type). Snapshots are not committed (licensing, Q2). `--offline` re-parses the latest
+   snapshot, and refuses one whose sha256 no longer matches its metadata.
+4. **Parse** — HTML → text lines (navigation, breadcrumbs, footnotes, amendment notes and
+   tables of contents are dropped); PDF → pypdf text. A shared splitter finds numbered sections
+   (`2.`, `2A.`, `75. —`). It drops running headers/footers (short lines repeated ≥ 3 times),
+   page numbers and the "Arrangement of Sections" list. It stops at schedules or legislative
+   history, uses a preceding short line as the section heading, and keeps the longest text
+   when a number repeats. The "current version as at" / "reprint as at" date becomes
+   `effective_from`.
+5. **Guards** — the parse fails if `expect_title` is not on the page, or if fewer than 3
+   sections are found. Warnings are recorded for duplicates and a missing version date.
+6. **Outputs** — `out/legal/<JUR>.jsonl` (ingestion format) and `out/legal/<JUR>-review.md`
+   (status table, warnings, and sample sections with official URL and sha256 for a lawyer
+   to compare against the portal).
+
+**Verification gate.**
+- `legal_sources` carries `review_status` (`unverified` | `verified`), `verified_by`,
+  `verified_at`, `verification_note`, `snapshot_sha256` and `retrieved_at` (migration 0004).
+- Ingested sources start `unverified`. `legal-verify SOURCE_ID --by EMAIL` records the
+  lawyer's check.
+- Re-ingesting a source whose snapshot sha256 changed resets it to `unverified`, because
+  new text needs a new check.
+- With `TRAVO_REQUIRE_VERIFIED_SOURCES=true` (required for pilots and production),
+  retrieval ignores unverified sources, so law checks fall back to `no_sources` → human.
+- The sources drawer shows "Not yet checked by a lawyer" for unverified, non-fixture units.
+- `GET /v1/legal-units/{id}` returns the status and provenance.
+
+**Limits.**
+- Parsers were tested only on synthetic pages that imitate the portal layouts. The real
+  SSO HTML structure and AGC PDF layout must be confirmed on first run `[verify]`.
+- Portal terms of use for re-use must be cleared (Q11).
+- Operating steps: [runbooks/legal-ingestion.md](runbooks/legal-ingestion.md).
+
