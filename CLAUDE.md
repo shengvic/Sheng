@@ -11,9 +11,11 @@ frontier models through a **model-agnostic, conflict-aware router**.
 - **Phase:** P1 — slices 1 (review engine), 2 (review canvas), 3 (SSO sign-in + admin
   console), 4 (official-statute pipeline + lawyer verification) and 5 (parser hardened on real
   AGC reprints; MY Contracts Act + PDPA parsed, unverified) done. P0 infra still open.
-- **Next step:** current MY reprints + official URLs and the other 4 MY Acts, then lawyer
-  `legal-verify`; SG via `legal-fetch` where SSO is reachable; real T1 endpoint + evals;
-  pre-pilot hardening (SCIM, domain verification, rate limits). See `docs/12-roadmap.md`.
+- **Launch market: Vietnam first (ADR-021).** Plan and workstreams V0–V9 in
+  `docs/14-vietnam-launch-plan.md`; SG/MY stay built but follow VN.
+- **Next step:** founder decisions VN1–VN8 (`docs/13`), then V1 (VN corpus: `vn.yaml`,
+  Điều/Khoản/Điểm parser, encoding normalisation, unaccented search) and V3 (bilingual
+  alignment + discrepancy checks) in parallel.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -34,6 +36,7 @@ frontier models through a **model-agnostic, conflict-aware router**.
 | `docs/11-evaluation-and-quality.md` | Evals, release gates |
 | `docs/12-roadmap.md` | Phases, milestones, team, risks |
 | `docs/13-open-questions.md` | Items needing founder decisions |
+| `docs/14-vietnam-launch-plan.md` | Vietnam-first launch: scope, corpus, bilingual review, residency, workstreams |
 
 ## Conventions
 - Specs are the source of truth. When implementation diverges, update the spec

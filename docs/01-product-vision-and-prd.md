@@ -10,7 +10,8 @@ across AI model providers.
 
 ## 2. Target customers
 - **Primary (MVP):** mid-to-large law firms (20–500 lawyers) in Singapore and Malaysia; corporate/commercial, M&A, banking & finance practices.
-- **Secondary (P2):** Vietnamese and Indonesian firms and the ASEAN offices of international firms handling VN/ID matters.
+- **Update 2026-09-30 (ADR-021):** Vietnam is the launch market: Vietnamese firms doing FDI/commercial work are the primary segment; see [14](14-vietnam-launch-plan.md).
+- **Secondary (P2, original plan):** Vietnamese and Indonesian firms and the ASEAN offices of international firms handling VN/ID matters.
 - **Later:** in-house legal teams of regional corporates.
 
 ## 3. Personas & jobs to be done

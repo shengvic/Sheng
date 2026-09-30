@@ -139,3 +139,17 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
   - Schedules and appendices are not ingested yet (reported).
   - Stale reprints (e.g. Contracts Act 2006, PDPA 2023, which predates the 2024 amendments) must be replaced with current ones before verification.
   - Whether the Q11 clearance covers the PNMB reproduction notice is `[verify]`.
+
+## ADR-021 — Launch in Vietnam first (answers Q1)
+- **Date:** 2026-09-30 · **Status:** Accepted
+- **Context:** The founder chose Vietnam as the launch market. SG/MY (English, common law) were planned first, and the code, corpus pipeline and playbooks are SG/MY-oriented.
+- **Decision:**
+  - The VN pilot plan in `docs/14-vietnam-launch-plan.md` (workstreams V0–V9) takes priority over SG/MY feature work; SG/MY stay built and green.
+  - Vietnamese is the authoritative legal language: only official Vietnamese text enters the index, and English renderings are labelled unofficial.
+  - Bilingual VI–EN review (alignment, discrepancy detection, prevailing language) is launch-critical.
+  - Client data of VN tenants stays in a VN cell by default. Offshore processing, including frontier escalation, needs a per-firm opt-in backed by consent and a transfer dossier.
+  - Cross-lingual dense retrieval becomes a launch requirement.
+- **Consequences:**
+  - New work: VN corpus parser (Điều/Khoản/Điểm, legacy encodings), a VN cell (infra), a Vietnamese UI, VN playbooks with a VN legal engineer, and T1 selection on Vietnamese.
+  - The pilot depends on VN1–VN8 (docs/13).
+  - All VN legal references in the plan are `[verify]` until a VN lawyer confirms them.

@@ -2,7 +2,12 @@
 
 > **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** all specs; progress tracked in `memory/SESSION_LOG.md`
 >
-> Time-to-market strategy: buy/borrow infrastructure early (managed inference, managed Temporal, managed auth), build only what differentiates (routing policy, legal RAG + validation, playbook workflows, flywheel), and ship to **Singapore/Malaysia design partners first** (English, common law), then add VN/ID.
+> **Superseded ordering (2026-09-30, ADR-021): Vietnam launches first.** The VN pilot plan and
+> workstreams V0–V9 are in [14](14-vietnam-launch-plan.md). SG/MY below stay built and supported
+> but follow VN; the P2 "Vietnam jurisdiction pack / VI support / bilingual alignment / VN cell"
+> items move into the VN pilot.
+>
+> Time-to-market strategy (original): buy/borrow infrastructure early (managed inference, managed Temporal, managed auth), build only what differentiates (routing policy, legal RAG + validation, playbook workflows, flywheel), and ship to **Singapore/Malaysia design partners first** (English, common law), then add VN/ID.
 
 ## Overview
 ```mermaid

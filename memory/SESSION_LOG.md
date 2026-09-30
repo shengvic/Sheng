@@ -12,6 +12,21 @@ Template:
 
 ---
 
+## 2026-09-30 — Vietnam-first launch plan
+- **Done:**
+  - The founder decided to launch in Vietnam first (Q1 → ADR-021).
+  - Wrote `docs/14-vietnam-launch-plan.md`: scope, VN legal corpus (sources, 15 launch instruments `[verify]`, parser and search changes), bilingual review (alignment, discrepancy checks, prevailing language, VN machine checks), models and routing, residency and compliance, Vietnamese UX, eval gates, workstreams V0–V9, decisions VN1–VN8, risks.
+  - Updated docs/01, 12 and 13, and CLAUDE.md.
+  - No code changes.
+- **Decisions:** ADR-021.
+- **Next:**
+  1. Founder answers to VN1–VN8.
+  2. Get official Vietnamese texts (vbpl.vn DOC/HTML) for BLDS 2015 and LTM 2005 to build `parsers_vn.py` against real documents.
+  3. Start V1 + V3.
+- **Open threads:**
+  - All VN legal references are from memory `[verify]`.
+  - The MY corpus inputs are still pending (lower priority now).
+
 ## 2026-09-30 — P1 slice 5: parser hardened on real AGC reprints; MY Acts imported
 - **Done:**
   - **Inputs:** the founder supplied 4 AGC Malaysia PDFs:
