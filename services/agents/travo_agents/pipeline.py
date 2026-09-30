@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from travo_rag.bilingual import redistribute_halves, separate
 from travo_rag.parsing import Block, detect_languages
 from travo_rag.segmentation import segment
 
@@ -17,6 +18,9 @@ class PipelineResult:
     languages: list[str]
     classification: Classification
     clauses: list[LabeledClause]
+    primary_language: str = "en"
+    other_language: str | None = None
+    layout: str = "single"  # single | table | inline | paragraphs (travo_rag.bilingual)
 
 
 def run_pipeline(ctx: AgentContext, blocks: list[Block]) -> PipelineResult:
@@ -26,5 +30,16 @@ def run_pipeline(ctx: AgentContext, blocks: list[Block]) -> PipelineResult:
     classification = classify(ctx, full_text)
     if classification.governing_law and classification.governing_law not in ctx.jurisdictions:
         ctx.jurisdictions = [*ctx.jurisdictions, classification.governing_law]
-    clauses = extract(ctx, segment(blocks))
-    return PipelineResult(languages=languages, classification=classification, clauses=clauses)
+    sep = separate(blocks, languages)
+    segments = segment(sep.blocks)
+    if sep.other and redistribute_halves(segments):
+        sep.layout = "halves"
+    clauses = extract(ctx, segments)
+    return PipelineResult(
+        languages=languages,
+        classification=classification,
+        clauses=clauses,
+        primary_language=sep.primary,
+        other_language=sep.other,
+        layout=sep.layout,
+    )

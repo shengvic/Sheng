@@ -48,10 +48,21 @@ def classify_rules(text: str) -> dict[str, Any]:
             contract_type, type_conf = ctype, 0.8
             break
     governing_law, law_conf = None, 0.0
-    for code, hints in GOVERNING_LAW_HINTS.items():
-        if any(h in low for h in hints):
-            governing_law, law_conf = code, 0.75
+    # Prefer the governing-law clause itself: a Vietnamese contract may mention Singapore law
+    # elsewhere (e.g. in an arbitration or definitions clause).
+    windows = [low[m.start() : m.start() + 400] for m in _GOV_LAW_HEADING.finditer(low)]
+    for scope, conf in ((w, 0.85) for w in windows):
+        for code, hints in GOVERNING_LAW_HINTS.items():
+            if any(h in scope for h in hints):
+                governing_law, law_conf = code, conf
+                break
+        if governing_law:
             break
+    if governing_law is None:
+        for code, hints in GOVERNING_LAW_HINTS.items():
+            if any(h in low for h in hints):
+                governing_law, law_conf = code, 0.75
+                break
     parties = _PARTY.findall(text[:4000])
     seen: list[str] = []
     for p in parties:
@@ -66,6 +77,11 @@ def classify_rules(text: str) -> dict[str, Any]:
         "parties": seen[:4],
     }
 
+
+_GOV_LAW_HEADING = re.compile(
+    r"governing law|applicable law|luật áp dụng|luật điều chỉnh|hukum yang berlaku|"
+    r"undang-undang yang mentadbir"
+)
 
 _PARTY = re.compile(
     r"\b((?:[A-Z][\w&.,'-]*\s+){1,6}?"

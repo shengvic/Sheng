@@ -120,6 +120,10 @@ class Document(Base):
     parties: Mapped[list[str]] = mapped_column(JSONB, default=list)
     parse_status: Mapped[str] = mapped_column(String(20), default="uploaded")
     error: Mapped[str | None] = mapped_column(Text)
+    # Bilingual contracts (ADR-023): clause text is in the primary language, `text_alt` in the
+    # other one; layout = single | table | inline | paragraphs | halves.
+    primary_language: Mapped[str | None] = mapped_column(String(8))
+    bilingual_layout: Mapped[str] = mapped_column(String(12), default="single")
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     created_at: Mapped[datetime] = _created()
 
@@ -136,6 +140,10 @@ class Clause(Base):
     text: Mapped[str] = mapped_column(Text)
     taxonomy_key: Mapped[str] = mapped_column(String(64))
     confidence: Mapped[float] = mapped_column(Float)
+    lang: Mapped[str | None] = mapped_column(String(8))
+    heading_alt: Mapped[str] = mapped_column(Text, default="")
+    text_alt: Mapped[str] = mapped_column(Text, default="")
+    lang_alt: Mapped[str | None] = mapped_column(String(8))
 
 
 class ModelPolicyRow(Base):

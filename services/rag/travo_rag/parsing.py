@@ -20,6 +20,10 @@ class UnsupportedDocument(ValueError):
 class Block:
     text: str
     is_heading: bool = False
+    # Table rows keep their cells: bilingual contracts are often a VI | EN two-column table.
+    cells: tuple[str, ...] = ()
+    # The other-language text of this block, set by `travo_rag.bilingual.separate`.
+    alt: str = ""
 
 
 def sniff_mime(filename: str, declared: str | None, head: bytes) -> str:
@@ -46,21 +50,34 @@ def parse(data: bytes, mime: str) -> list[Block]:
 
 def _parse_docx(data: bytes) -> list[Block]:
     from docx import Document  # lazy: heavy import
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
 
     doc = Document(io.BytesIO(data))
     blocks: list[Block] = []
-    for p in doc.paragraphs:
-        text = p.text.strip()
-        if not text:
-            continue
-        style = (p.style.name or "") if p.style is not None else ""
-        # Document titles belong to the preamble; only section headings start clauses.
-        blocks.append(Block(text=text, is_heading=style.lower().startswith("heading")))
-    for table in doc.tables:
-        for row in table.rows:
-            cells = [c.text.strip() for c in row.cells if c.text.strip()]
-            if cells:
-                blocks.append(Block(text=" | ".join(cells)))
+    # Body order matters: a clause laid out as a table sits between paragraphs.
+    for child in doc.element.body.iterchildren():
+        tag = child.tag.rsplit("}", 1)[-1]
+        if tag == "p":
+            p = Paragraph(child, doc)
+            text = p.text.strip()
+            if not text:
+                continue
+            style = (p.style.name or "") if p.style is not None else ""
+            # Document titles belong to the preamble; only section headings start clauses.
+            blocks.append(Block(text=text, is_heading=style.lower().startswith("heading")))
+        elif tag == "tbl":
+            for row in Table(child, doc).rows:
+                seen: set[int] = set()
+                cells: list[str] = []
+                for cell in row.cells:
+                    if id(cell._tc) in seen:  # merged cells repeat in python-docx
+                        continue
+                    seen.add(id(cell._tc))
+                    if cell.text.strip():
+                        cells.append(cell.text.strip())
+                if cells:
+                    blocks.append(Block(text=" | ".join(cells), cells=tuple(cells)))
     return blocks
 
 
@@ -79,7 +96,7 @@ def _lines(text: str) -> list[Block]:
     return [Block(text=ln.strip()) for ln in text.splitlines() if ln.strip()]
 
 
-_VI_CHARS = re.compile(r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]", re.I)
+VI_CHARS = re.compile(r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]", re.I)
 _ID_WORDS = {"yang", "dan", "dengan", "perjanjian", "pihak", "untuk", "dalam", "tersebut", "pasal"}
 _MS_WORDS = {"hendaklah", "perjanjian", "pihak", "yang", "dan", "adalah", "fasal", "boleh"}
 _EN_WORDS = {"the", "and", "of", "agreement", "shall", "party", "to", "in"}
@@ -90,7 +107,7 @@ def detect_languages(text: str, min_share: float = 0.15) -> list[str]:
     words = re.findall(r"[^\W\d_]+", text.lower())
     if not words:
         return []
-    vi_words = sum(1 for w in words if _VI_CHARS.search(w))
+    vi_words = sum(1 for w in words if VI_CHARS.search(w))
     # Latin-script languages are scored against non-Vietnamese words so bilingual
     # documents surface both languages.
     latin = max(len(words) - vi_words, 1)

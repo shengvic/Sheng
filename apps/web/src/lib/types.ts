@@ -39,6 +39,8 @@ export interface DocumentRow {
   parties: string[];
   parse_status: ParseStatus;
   error: string | null;
+  primary_language: string | null;
+  bilingual_layout: "single" | "table" | "inline" | "paragraphs" | "halves";
   created_at: string;
 }
 
@@ -50,6 +52,10 @@ export interface Clause {
   text: string;
   taxonomy_key: string;
   confidence: number;
+  lang: string | null;
+  heading_alt: string;
+  text_alt: string;
+  lang_alt: string | null;
 }
 
 export type RunStatus = "queued" | "running" | "completed" | "failed";

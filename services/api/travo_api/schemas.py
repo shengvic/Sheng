@@ -56,6 +56,8 @@ class DocumentOut(BaseModel):
     parties: list[str]
     parse_status: str
     error: str | None
+    primary_language: str | None = None
+    bilingual_layout: str = "single"
     created_at: datetime
 
 
@@ -68,6 +70,10 @@ class ClauseOut(BaseModel):
     text: str
     taxonomy_key: str
     confidence: float
+    lang: str | None = None
+    heading_alt: str = ""
+    text_alt: str = ""
+    lang_alt: str | None = None
 
 
 class PolicyIn(BaseModel):

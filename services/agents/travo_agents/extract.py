@@ -22,14 +22,24 @@ class LabeledClause(BaseModel):
     text: str
     key: str
     confidence: float
+    heading_alt: str = ""  # the clause's other-language version (bilingual contracts)
+    text_alt: str = ""
 
 
 def extract(ctx: AgentContext, segments: list[Segment]) -> list[LabeledClause]:
     labels: dict[int, tuple[str, float]] = {}
     for start in range(0, len(segments), BATCH):
         batch = segments[start : start + BATCH]
+        # Both language versions help labelling (hints exist in en and vi).
         payload = {
-            "clauses": [{"i": s.index, "heading": s.heading, "text": s.text[:1500]} for s in batch]
+            "clauses": [
+                {
+                    "i": s.index,
+                    "heading": " / ".join(h for h in (s.heading, s.heading_alt) if h),
+                    "text": "\n".join(t for t in (s.text, s.text_alt) if t)[:1500],
+                }
+                for s in batch
+            ]
         }
         out = call_json(ctx, "clause_extraction", SYSTEM, payload, est_output=30 * len(batch)).data
         items = out.get("clauses")
@@ -49,6 +59,8 @@ def extract(ctx: AgentContext, segments: list[Segment]) -> list[LabeledClause]:
             text=s.text,
             key=labels.get(s.index, ("other", 0.0))[0],
             confidence=labels.get(s.index, ("other", 0.0))[1],
+            heading_alt=s.heading_alt,
+            text_alt=s.text_alt,
         )
         for s in segments
     ]

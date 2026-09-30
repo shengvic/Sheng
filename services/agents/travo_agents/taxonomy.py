@@ -134,7 +134,7 @@ CLAUSE_TAXONOMY: dict[str, tuple[str, list[str]]] = {
     ),
     "language": (
         "Prevailing language / counterparts",
-        ["language", "counterpart", "ngôn ngữ", "bahasa"],
+        ["language", "counterpart", "prevail", "ngôn ngữ", "ưu tiên áp dụng", "bahasa"],
     ),
     "signatures": (
         "Execution blocks",
@@ -147,6 +147,53 @@ CLAUSE_TAXONOMY: dict[str, tuple[str, list[str]]] = {
             "tanda tangan",
             "ditandatangani",
         ],
+    ),
+    # Commercial, services and data-processing contracts (Vietnam launch scope, docs/14 §2).
+    "price_payment": (
+        "Price, fees and payment terms",
+        ["price", "payment", "fees", "giá", "thanh toán", "phí dịch vụ", "harga", "pembayaran"],
+    ),
+    "penalty": (
+        "Contractual penalty / liquidated damages",
+        ["penalty", "liquidated damages", "phạt vi phạm", "phạt hợp đồng", "denda"],
+    ),
+    "force_majeure": ("Force majeure", ["force majeure", "bất khả kháng", "keadaan kahar"]),
+    "delivery_acceptance": (
+        "Delivery, inspection and acceptance",
+        ["delivery", "acceptance", "giao hàng", "nghiệm thu", "giao nhận", "pengiriman"],
+    ),
+    "warranties": (
+        "Warranties of goods or services",
+        ["warranty", "warranties", "bảo hành", "jaminan"],
+    ),
+    "service_levels": (
+        "Service levels / service standards",
+        ["service level", "sla", "chất lượng dịch vụ", "mức độ dịch vụ"],
+    ),
+    "processing_scope": (
+        "Scope, purpose and instructions for processing personal data",
+        ["scope of processing", "processing instructions", "phạm vi xử lý", "mục đích xử lý"],
+    ),
+    "security_measures": (
+        "Security measures for personal data",
+        [
+            "security measures",
+            "technical and organisational",
+            "biện pháp bảo vệ",
+            "biện pháp an ninh",
+        ],
+    ),
+    "subprocessors": (
+        "Sub-processors",
+        ["sub-processor", "subprocessor", "bên xử lý phụ", "bên xử lý khác"],
+    ),
+    "cross_border_transfer": (
+        "Transfer of personal data abroad",
+        ["cross-border", "transfer outside", "ra nước ngoài", "xuyên biên giới"],
+    ),
+    "breach_notification": (
+        "Personal data breach notification",
+        ["breach notification", "data breach", "vi phạm dữ liệu", "sự cố dữ liệu"],
     ),
     "other": ("Not in taxonomy", []),
 }
@@ -195,7 +242,22 @@ CONTRACT_TYPES: dict[str, list[str]] = {
         "perjanjian distribusi",
     ],
     "LOAN": ["facility agreement", "loan agreement", "hợp đồng vay", "perjanjian pinjaman"],
-    "DPA": ["data processing agreement", "data processing addendum"],
+    "DPA": [
+        "data processing agreement",
+        "data processing addendum",
+        "xử lý dữ liệu cá nhân",
+        "thỏa thuận xử lý dữ liệu",
+    ],
+    # After SPA ("hợp đồng mua bán cổ phần"), which it would otherwise shadow.
+    "SALE": [
+        "sale of goods",
+        "sales contract",
+        "purchase agreement",
+        "supply agreement",
+        "hợp đồng mua bán",
+        "hợp đồng cung cấp hàng hóa",
+        "hợp đồng cung ứng",
+    ],
 }
 
 GOVERNING_LAW_HINTS: dict[str, list[str]] = {

@@ -10,6 +10,8 @@ from travo_agents.playbooks import ClauseRule, Playbook, select_playbook
         ("for 18 months", [18]),
         ("trong thời hạn 2 năm", [24]),
         ("selama 6 bulan", [6]),
+        ("thời hạn hai (02) năm", [24]),
+        ("mười hai tháng", [12]),
         ("no period", []),
     ],
 )
@@ -18,7 +20,9 @@ def test_durations(text, months):
 
 
 def test_amounts():
-    assert amounts("shall not exceed RM10,000 or S$ 2,500.50") == [10000.0, 2500.0]
+    assert amounts("shall not exceed RM10,000 or S$ 2,500.50") == [10000.0, 2500.5]
+    # Vietnamese: "." thousands separator, currency after the figure.
+    assert amounts("không vượt quá 100.000.000 VND hoặc 5.000.000 đồng") == [1e8, 5e6]
 
 
 def rule(**kw):

@@ -87,6 +87,8 @@ def process_document(actor: Actor, matter: Matter, doc: Document) -> None:
     doc.contract_type_confidence = c.contract_type_confidence
     doc.governing_law = c.governing_law
     doc.parties = c.parties
+    doc.primary_language = result.primary_language
+    doc.bilingual_layout = result.layout
     doc.parse_status = "classified"
     doc.error = None
     session.execute(delete(Clause).where(Clause.document_id == doc.id))
@@ -102,6 +104,10 @@ def process_document(actor: Actor, matter: Matter, doc: Document) -> None:
                 text=lc.text,
                 taxonomy_key=lc.key,
                 confidence=lc.confidence,
+                lang=result.primary_language,
+                heading_alt=lc.heading_alt,
+                text_alt=lc.text_alt,
+                lang_alt=result.other_language if (lc.text_alt or lc.heading_alt) else None,
             )
         )
     audit(

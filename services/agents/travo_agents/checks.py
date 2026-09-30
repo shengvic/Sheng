@@ -2,49 +2,14 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from travo_agents.numbers import amounts, durations_months
 from travo_agents.playbooks import ClauseRule
 
-_NUM_WORDS = {
-    "one": 1,
-    "two": 2,
-    "three": 3,
-    "four": 4,
-    "five": 5,
-    "six": 6,
-    "seven": 7,
-    "eight": 8,
-    "nine": 9,
-    "ten": 10,
-    "eleven": 11,
-    "twelve": 12,
-    "eighteen": 18,
-    "twenty-four": 24,
-}
-_DURATION = re.compile(
-    r"\b(\d{1,3}|"
-    + "|".join(_NUM_WORDS)
-    + r")(?:\s*\(\d{1,3}\))?\s+(years?|months?|năm|tháng|tahun|bulan)\b",
-    re.IGNORECASE,
-)
-_AMOUNT = re.compile(
-    r"(?:RM|MYR|S\$|SGD|US\$|USD|\$|VND|IDR|Rp\.?)\s?(\d{1,3}(?:[,.]\d{3})+|\d+)(?:\.\d+)?",
-    re.IGNORECASE,
-)
-
-
-def durations_months(text: str) -> list[int]:
-    out = []
-    for num, unit in _DURATION.findall(text):
-        n = int(num) if num.isdigit() else _NUM_WORDS[num.lower()]
-        out.append(n * 12 if unit.lower().startswith(("year", "năm", "tahun")) else n)
-    return out
-
-
-def amounts(text: str) -> list[float]:
-    return [float(re.sub(r"[,.]", "", a)) for a in _AMOUNT.findall(text)]
+# Figures, words and units in English and Vietnamese live in `numbers.py` (shared with the
+# bilingual checks). Re-exported here for existing callers.
+__all__ = ["amounts", "durations_months", "evaluate_rule"]
 
 
 def evaluate_rule(rule: ClauseRule, clauses: list[dict[str, Any]]) -> dict[str, Any] | None:
