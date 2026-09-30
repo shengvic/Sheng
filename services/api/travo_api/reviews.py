@@ -263,7 +263,10 @@ def step_bilingual(sc: StepContext) -> dict[str, Any]:
         for c in clauses
         if c.heading != "Preamble"
     ]
-    drafts = check_bilingual(ctx, pairs, langs)
+    out_lang, _, _ = _languages(sc)
+    drafts = check_bilingual(
+        ctx, pairs, langs, language="vi" if out_lang in ("vi", "both") else "en"
+    )
     ids = {c.idx: c.id for c in clauses}
     for d in drafts:
         _add_finding(sc, d, ids)
@@ -279,7 +282,9 @@ def step_compare(sc: StepContext) -> dict[str, Any]:
     clauses = _clauses(sc)
     pb = Playbook.model_validate(sc.run.playbook_spec)
     threshold = get_review_config().thresholds.get("playbook_compare", 0.5)
-    drafts = compare(ctx, pb, _clause_dicts(clauses), threshold)
+    out_lang, _, _ = _languages(sc)
+    lang = "vi" if out_lang in ("vi", "both") else "en"
+    drafts = compare(ctx, pb, _clause_dicts(clauses), threshold, language=lang)
     ids = {c.idx: c.id for c in clauses}
     for d in drafts:
         _add_finding(sc, d, ids)

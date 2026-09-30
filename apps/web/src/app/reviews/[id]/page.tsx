@@ -12,13 +12,12 @@ import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 import { SourcesDrawer } from "@/components/SourcesDrawer";
 import { StepProgress } from "@/components/StepProgress";
 import { Button, Card, Chip, ErrorNote, SeverityBadge, Spinner, cx } from "@/components/ui";
-import { t } from "@/i18n/en";
+import { clauseName, findingTitle, useT } from "@/i18n/context";
 import { api } from "@/lib/api";
 import {
   DEFAULT_FILTER,
   applyFilter,
   counts,
-  humanize,
   isOpen,
   sortFindings,
   type FindingFilter,
@@ -58,6 +57,7 @@ function DocumentPane({
   selected: Finding | undefined;
   onSelectClause: (clauseId: string) => void;
 }) {
+  const t = useT();
   const byClause = useMemo(() => {
     const m = new Map<string, Finding[]>();
     for (const f of findings) if (f.clause_id) m.set(f.clause_id, [...(m.get(f.clause_id) ?? []), f]);
@@ -78,6 +78,9 @@ function DocumentPane({
           (f) => f.kind === "playbook" && (f.disposition === "accepted" || f.disposition === "edited"),
         );
         const newText = applied ? (applied.edited_text ?? applied.suggested_redline) : null;
+        // Bilingual clauses: the other-language version sits beside the primary text.
+        const altNew = applied && !applied.edited_text ? applied.suggested_redline_alt : null;
+        const bilingual = !!c.text_alt;
         return (
           <section
             key={c.id}
@@ -94,17 +97,31 @@ function DocumentPane({
                 <span>
                   {c.number ? `${c.number} ` : ""}
                   {c.heading}
+                  {c.heading_alt && <span className="font-normal text-muted"> / {c.heading_alt}</span>}
                 </span>
                 {fs.map((f) => (
                   <SeverityBadge key={f.id} severity={f.severity} />
                 ))}
               </h3>
             )}
-            {newText ? (
-              <RedlineDiff before={c.text} after={newText} />
-            ) : (
-              <p className="doc-text whitespace-pre-wrap">{c.text}</p>
-            )}
+            <div className={cx(bilingual && "grid gap-3 md:grid-cols-2")} data-testid={bilingual ? "bilingual-clause" : undefined}>
+              <div lang={c.lang ?? undefined}>
+                {newText ? (
+                  <RedlineDiff before={c.text} after={newText} />
+                ) : (
+                  <p className="doc-text whitespace-pre-wrap">{c.text}</p>
+                )}
+              </div>
+              {bilingual && (
+                <div lang={c.lang_alt ?? undefined} className="border-l border-border pl-3 text-muted md:text-text">
+                  {altNew ? (
+                    <RedlineDiff before={c.text_alt} after={altNew} />
+                  ) : (
+                    <p className="doc-text whitespace-pre-wrap">{c.text_alt}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
         );
       })}
@@ -120,12 +137,12 @@ function DocumentPane({
             )}
           >
             <h3 className="mb-0.5 flex items-center gap-2 text-sm font-semibold text-muted">
-              {t.review.missingClause}: {humanize(f.clause_key)} <SeverityBadge severity={f.severity} />
+              {t.review.missingClause}: {clauseName(t, f.clause_key)} <SeverityBadge severity={f.severity} />
             </h3>
             {text && (f.disposition === "accepted" || f.disposition === "edited") ? (
               <RedlineDiff before="" after={text} />
             ) : (
-              <p className="text-xs text-muted">Not in the contract.</p>
+              <p className="text-xs text-muted">{t.review.notInContract}</p>
             )}
           </section>
         );
@@ -135,6 +152,7 @@ function DocumentPane({
 }
 
 export default function ReviewPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const review = useQuery({
@@ -192,7 +210,7 @@ export default function ReviewPage() {
         return;
       }
       if (undoTimer.current) clearTimeout(undoTimer.current);
-      setUndo({ findingId: vars.f.id, label: `${humanize(vars.f.rule_key)}: ${vars.action}`, restore: restoreFor(vars.f) });
+      setUndo({ findingId: vars.f.id, label: `${findingTitle(t, vars.f)}: ${vars.action}`, restore: restoreFor(vars.f) });
       undoTimer.current = setTimeout(() => setUndo(null), 10_000);
       // Advance to the next open finding in the current view.
       const after = visible.slice(selectedIdx + 1).find((x) => isOpen(x) && x.id !== vars.f.id);
@@ -277,16 +295,21 @@ export default function ReviewPage() {
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0">
           <Link href={`/matters/${r.matter_id}`} className="text-sm text-muted hover:text-text">
-            ← Matter
+            {t.review.backToMatter}
           </Link>
-          <h1 className="mt-0.5 truncate text-lg font-semibold">{doc.data?.filename ?? "Review"}</h1>
+          <h1 className="mt-0.5 truncate text-lg font-semibold">{doc.data?.filename ?? t.review.fallbackTitle}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <Chip>
-              {r.playbook_key} v{r.playbook_version} · {r.playbook_source === "tenant" ? "firm playbook" : "starter"}
+              {r.playbook_key} v{r.playbook_version} ·{" "}
+              {r.playbook_source === "tenant" ? t.review.firmPlaybook : t.review.starterPlaybook}
             </Chip>
             {doc.data?.contract_type && <Chip>{doc.data.contract_type}</Chip>}
-            {doc.data?.governing_law && <Chip>{doc.data.governing_law} law</Chip>}
-            <span>Model cost {usd(r.cost_usd)}</span>
+            {doc.data?.governing_law && <Chip>{t.matter.law(doc.data.governing_law)}</Chip>}
+            {doc.data && doc.data.bilingual_layout !== "single" && (
+              <Chip tone="accent">{t.matter.layout[doc.data.bilingual_layout] ?? doc.data.bilingual_layout}</Chip>
+            )}
+            {r.options?.output_language && <Chip>{t.matter.output[r.options.output_language]}</Chip>}
+            <span>{t.review.modelCost(usd(r.cost_usd))}</span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -297,19 +320,27 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {r.status === "failed" && <ErrorNote error={`Review failed: ${r.error ?? "unknown error"}`} />}
+      {r.status === "failed" && <ErrorNote error={t.review.failed(r.error ?? t.review.unknownError)} />}
       {!done && r.status !== "failed" && (
         <Card className="p-6">
-          <Spinner label="Travo is reviewing the contract" />
+          <Spinner label={t.review.reviewing} />
         </Card>
       )}
 
       {done && (
         <>
           {r.summary.executive_summary && (
-            <Card className="p-3 text-sm">
-              <span className="font-medium">Summary. </span>
-              {r.summary.executive_summary}
+            <Card className="space-y-1 p-3 text-sm">
+              <p>
+                <span className="font-medium">{t.review.summary} </span>
+                {r.summary.executive_summary}
+              </p>
+              {r.summary.executive_summary_en && (
+                <p lang="en" className="text-muted">
+                  <span className="font-medium">{t.review.summaryEn} </span>
+                  {r.summary.executive_summary_en}
+                </p>
+              )}
             </Card>
           )}
           <ExportBar
@@ -345,51 +376,50 @@ export default function ReviewPage() {
 
             <section aria-label={t.review.findings} className="flex max-h-[calc(100vh-15rem)] flex-col gap-2">
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="font-semibold">
-                  {c.open} open / {c.issues} issues
-                </span>
-                <Chip tone="bad">{c.bySeverity.high} high</Chip>
-                <Chip tone="warn">{c.bySeverity.medium} medium</Chip>
-                <Chip>{c.bySeverity.low} low</Chip>
-                {c.needsHuman > 0 && <Chip tone="bad">{c.needsHuman} need lawyer</Chip>}
+                <span className="font-semibold">{t.review.openOfIssues(c.open, c.issues)}</span>
+                <Chip tone="bad">{t.review.countHigh(c.bySeverity.high)}</Chip>
+                <Chip tone="warn">{t.review.countMedium(c.bySeverity.medium)}</Chip>
+                <Chip>{t.review.countLow(c.bySeverity.low)}</Chip>
+                {c.needsHuman > 0 && <Chip tone="bad">{t.review.countNeedLawyer(c.needsHuman)}</Chip>}
                 <select
                   className="ml-auto h-7 rounded border border-border bg-surface px-1.5"
                   value={filter.severity}
                   onChange={(e) => setFilter({ ...filter, severity: e.target.value as FindingFilter["severity"] })}
-                  aria-label="Severity filter"
+                  aria-label={t.review.filterLabel.severity}
                 >
-                  <option value="issues">Issues only</option>
-                  <option value="all">All incl. standard</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
+                  <option value="issues">{t.review.filters.issues}</option>
+                  <option value="all">{t.review.filters.all}</option>
+                  <option value="high">{t.review.filters.high}</option>
+                  <option value="medium">{t.review.filters.medium}</option>
+                  <option value="low">{t.review.filters.low}</option>
                 </select>
                 <select
                   className="h-7 rounded border border-border bg-surface px-1.5"
                   value={filter.kind}
                   onChange={(e) => setFilter({ ...filter, kind: e.target.value as FindingFilter["kind"] })}
-                  aria-label="Kind filter"
+                  aria-label={t.review.filterLabel.kind}
                 >
-                  <option value="all">Playbook + law</option>
-                  <option value="playbook">Playbook</option>
-                  <option value="law">Law</option>
+                  <option value="all">{t.review.filters.kindAll}</option>
+                  <option value="playbook">{t.review.filters.playbook}</option>
+                  <option value="law">{t.review.filters.law}</option>
+                  <option value="bilingual">{t.review.filters.bilingual}</option>
                 </select>
                 <select
                   className="h-7 rounded border border-border bg-surface px-1.5"
                   value={filter.state}
                   onChange={(e) => setFilter({ ...filter, state: e.target.value as FindingFilter["state"] })}
-                  aria-label="State filter"
+                  aria-label={t.review.filterLabel.state}
                 >
-                  <option value="all">Any state</option>
-                  <option value="open">Open</option>
-                  <option value="done">Resolved</option>
-                  <option value="needs_human">Needs lawyer</option>
+                  <option value="all">{t.review.filters.stateAll}</option>
+                  <option value="open">{t.review.filters.open}</option>
+                  <option value="done">{t.review.filters.done}</option>
+                  <option value="needs_human">{t.review.filters.needsHuman}</option>
                 </select>
               </div>
-              <div className="flex-1 space-y-2 overflow-y-auto pr-1" role="listbox" aria-label="Findings list">
+              <div className="flex-1 space-y-2 overflow-y-auto pr-1" role="listbox" aria-label={t.review.findingsList}>
                 {findings.isLoading && <Spinner />}
                 {visible.length === 0 && findings.data && (
-                  <p className="p-3 text-sm text-muted">No findings match these filters.</p>
+                  <p className="p-3 text-sm text-muted">{t.review.noMatch}</p>
                 )}
                 {visible.map((f) => (
                   <FindingCard

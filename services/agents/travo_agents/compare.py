@@ -42,12 +42,17 @@ def clause_payload(clauses: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def compare(
-    ctx: AgentContext, playbook: Playbook, clauses: list[dict[str, Any]], threshold: float = 0.5
+    ctx: AgentContext,
+    playbook: Playbook,
+    clauses: list[dict[str, Any]],
+    threshold: float = 0.5,
+    language: str = "en",
 ) -> list[FindingDraft]:
     rules = {r.key: r for r in playbook.rules}
     present = {c["key"] for c in clauses}
     must_answer = {r.key for r in playbook.rules if r.required or r.clause_key in present}
     payload = {
+        "language": {"vi": "Vietnamese", "en": "English"}.get(language, language),
         "rules": [r.model_dump(exclude_none=True) for r in playbook.rules],
         "clauses": clause_payload(clauses),
     }

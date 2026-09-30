@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button, ErrorNote, Field, inputClass } from "@/components/ui";
-import { t } from "@/i18n/en";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { useT } from "@/i18n/context";
 import { CSRF_HEADER } from "@/lib/csrf";
 import { safeNext } from "@/lib/pkce";
 
 export function LoginForm({ devLogin, error, next }: { devLogin: boolean; error: string | null; next: string | null }) {
+  const t = useT();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -36,6 +38,9 @@ export function LoginForm({ devLogin, error, next }: { devLogin: boolean; error:
         <div className="flex items-center gap-2 text-lg font-semibold">
           <span className="grid h-7 w-7 place-items-center rounded bg-accent text-sm text-accent-ink">T</span>
           {t.auth.title}
+          <span className="ml-auto font-normal">
+            <LanguageSwitch />
+          </span>
         </div>
         {error && <ErrorNote error={t.auth.errors[error] ?? t.auth.errors.signin_failed} />}
         {/* Navigate (not submit): CSP form-action would block the redirect on to the IdP. */}

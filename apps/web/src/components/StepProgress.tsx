@@ -1,25 +1,19 @@
 "use client";
 
+import { useT } from "@/i18n/context";
 import type { Review } from "@/lib/types";
 
 import { cx } from "./ui";
 
 const DEFAULT_STEPS = ["prepare", "bilingual", "compare", "lawcheck", "redline", "memo"];
-const LABEL: Record<string, string> = {
-  prepare: "Prepare",
-  bilingual: "VI/EN",
-  compare: "Playbook",
-  lawcheck: "Law check",
-  redline: "Redlines",
-  memo: "Memo",
-};
 
 export function StepProgress({ review }: { review: Review }) {
+  const t = useT();
   const byName = new Map(review.steps.map((s) => [s.name, s]));
   // Older reviews ran without the bilingual step: show the steps this run actually has.
   const ALL_STEPS = review.steps.length ? [...review.steps].sort((a, b) => a.idx - b.idx).map((s) => s.name) : DEFAULT_STEPS;
   return (
-    <ol className="flex items-center gap-1" aria-label="Review progress">
+    <ol className="flex items-center gap-1" aria-label={t.steps.progress}>
       {ALL_STEPS.map((name, i) => {
         const s = byName.get(name);
         const state = s?.status === "completed" ? "done" : s?.status === "failed" ? "failed" : "todo";
@@ -35,7 +29,7 @@ export function StepProgress({ review }: { review: Review }) {
               )}
               title={s?.error ?? undefined}
             >
-              {state === "done" ? "✓" : state === "failed" ? "✕" : active ? "…" : "○"} {LABEL[name] ?? name}
+              {state === "done" ? "✓" : state === "failed" ? "✕" : active ? "…" : "○"} {t.steps[name] ?? name}
             </span>
             {i < ALL_STEPS.length - 1 && <span className="h-px w-3 bg-border" aria-hidden />}
           </li>

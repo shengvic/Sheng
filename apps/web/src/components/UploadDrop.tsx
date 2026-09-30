@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react";
 
-import { t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 
 import { Button, cx } from "./ui";
 
 export function UploadDrop({ onFile, busy }: { onFile: (f: File) => void; busy: boolean }) {
+  const t = useT();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
@@ -27,7 +28,7 @@ export function UploadDrop({ onFile, busy }: { onFile: (f: File) => void; busy: 
         over ? "border-accent bg-accent-soft" : "border-border",
       )}
     >
-      <span className="text-muted">{busy ? "Uploading and classifying…" : t.matter.dropHint}</span>
+      <span className="text-muted">{busy ? t.matter.uploading : t.matter.dropHint}</span>
       <input
         ref={input}
         type="file"

@@ -19,7 +19,12 @@ from travo_router.registry import Endpoint
 
 from travo_agents.checks import evaluate_rule
 from travo_agents.playbooks import ClauseRule
-from travo_agents.taxonomy import CLAUSE_TAXONOMY, CONTRACT_TYPES, GOVERNING_LAW_HINTS
+from travo_agents.taxonomy import (
+    CLAUSE_NAMES_VI,
+    CLAUSE_TAXONOMY,
+    CONTRACT_TYPES,
+    GOVERNING_LAW_HINTS,
+)
 
 
 class RulesProvider:
@@ -117,7 +122,8 @@ def _contains(haystack: str, needle: str) -> bool:
 def _compare(payload: dict[str, Any]) -> dict[str, Any]:
     findings = []
     for raw in payload["rules"]:
-        f = evaluate_rule(ClauseRule.model_validate(raw), payload["clauses"])
+        lang = "vi" if payload.get("language") == "Vietnamese" else "en"
+        f = evaluate_rule(ClauseRule.model_validate(raw), payload["clauses"], lang)
         if f is not None:
             findings.append(f)
     return {"findings": findings}
@@ -162,11 +168,10 @@ def _memo(payload: dict[str, Any]) -> dict[str, Any]:
     by_sev = {
         s: sum(1 for f in issues if f.get("severity") == s) for s in ("high", "medium", "low")
     }
-    missing = [
-        f["clause_key"].replace("_", " ") for f in issues if f.get("classification") == "missing"
-    ]
+    missing = [f["clause_key"] for f in issues if f.get("classification") == "missing"]
     mismatches = sum(1 for f in issues if f.get("kind") == "bilingual")
     if payload.get("language") == "Vietnamese":
+        missing = [CLAUSE_NAMES_VI.get(k, k.replace("_", " ")) for k in missing]
         summary = (
             f"Phát hiện {len(issues)} vấn đề ({by_sev['high']} mức cao, {by_sev['medium']} mức "
             f"trung bình, {by_sev['low']} mức thấp) qua {len(fs)} lượt kiểm tra."
@@ -184,7 +189,7 @@ def _memo(payload: dict[str, Any]) -> dict[str, Any]:
     if mismatches:
         summary += f" {mismatches} mismatch(es) between the Vietnamese and English versions."
     if missing:
-        summary += f" Missing clauses: {', '.join(missing)}."
+        summary += f" Missing clauses: {', '.join(k.replace('_', ' ') for k in missing)}."
     points = [f["summary"] for f in issues if f.get("severity") in ("high", "medium")]
     return {"executive_summary": summary, "negotiation_points": points}
 

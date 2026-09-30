@@ -5,13 +5,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { t } from "@/i18n/en";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { useT } from "@/i18n/context";
 import { api } from "@/lib/api";
 import { CSRF_HEADER } from "@/lib/csrf";
 
 import { Button, cx } from "./ui";
 
 function ThemeToggle() {
+  const t = useT();
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   useEffect(() => {
     try {
@@ -33,13 +35,14 @@ function ThemeToggle() {
   }, [theme]);
   const next = theme === "system" ? "dark" : theme === "dark" ? "light" : "system";
   return (
-    <Button variant="ghost" size="sm" onClick={() => setTheme(next)} aria-label={`Theme: ${theme}`}>
-      {theme === "dark" ? "◐ Dark" : theme === "light" ? "◑ Light" : "◒ Auto"}
+    <Button variant="ghost" size="sm" onClick={() => setTheme(next)} aria-label={t.common.theme.label(theme)}>
+      {theme === "dark" ? t.common.theme.dark : theme === "light" ? t.common.theme.light : t.common.theme.auto}
     </Button>
   );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   // proxy.ts already redirected requests without a session cookie; the API decides validity.
@@ -63,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="grid h-6 w-6 place-items-center rounded bg-accent text-xs text-accent-ink">T</span>
             {t.appName}
           </Link>
-          <nav className="flex gap-1" aria-label="Main">
+          <nav className="flex gap-1" aria-label={t.nav.main}>
             {nav.map((n) => (
               <Link
                 key={n.href}
@@ -78,6 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitch />
             <ThemeToggle />
             {me.data && (
               <span className="hidden text-sm text-muted sm:inline" data-testid="whoami">

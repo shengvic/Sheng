@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { REASON_LABEL, t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 import { REASON_CODES, type ReasonCode } from "@/lib/types";
 
 import { Button, inputClass } from "./ui";
@@ -14,6 +14,7 @@ export function ReasonMenu({
   onSubmit: (reason: ReasonCode, note: string) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [reason, setReason] = useState<ReasonCode | "">("");
   const [note, setNote] = useState("");
   const first = useRef<HTMLSelectElement>(null);
@@ -31,22 +32,22 @@ export function ReasonMenu({
         className={`${inputClass} w-full`}
         value={reason}
         onChange={(e) => setReason(e.target.value as ReasonCode)}
-        aria-label="Reason for rejecting"
+        aria-label={t.review.rejectLabel}
         required
       >
-        <option value="">Why reject? (required)</option>
+        <option value="">{t.review.rejectPrompt}</option>
         {REASON_CODES.map((c) => (
           <option key={c} value={c}>
-            {REASON_LABEL[c]}
+            {t.reasons[c]}
           </option>
         ))}
       </select>
       <input
         className={`${inputClass} w-full`}
-        placeholder="Optional note for the team"
+        placeholder={t.review.notePlaceholder}
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        aria-label="Note"
+        aria-label={t.review.noteLabel}
       />
       <div className="flex gap-2">
         <Button type="submit" variant="danger" size="sm" disabled={!reason}>

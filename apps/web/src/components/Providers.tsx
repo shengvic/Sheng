@@ -4,9 +4,11 @@ import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-qu
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { I18nProvider } from "@/i18n/context";
+import type { Locale } from "@/i18n/locale";
 import { ApiError } from "@/lib/api";
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   const router = useRouter();
   const [client] = useState(
     () =>
@@ -27,5 +29,9 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   );
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <I18nProvider locale={locale}>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </I18nProvider>
+  );
 }

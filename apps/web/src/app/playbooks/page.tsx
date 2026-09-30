@@ -4,24 +4,28 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Card, Chip, ErrorNote, SeverityBadge, Spinner, cx } from "@/components/ui";
-import { t } from "@/i18n/en";
+import { clauseName, useLocale, useT } from "@/i18n/context";
+import type { Dict } from "@/i18n/en";
 import { api } from "@/lib/api";
-import { humanize } from "@/lib/findings";
 import type { PlaybookRule } from "@/lib/types";
 
-function checks(r: PlaybookRule): string[] {
+function checks(t: Dict, r: PlaybookRule): string[] {
+  const c = t.playbooks.check;
   const out: string[] = [];
-  if (r.min_duration_months) out.push(`≥ ${r.min_duration_months} months`);
-  if (r.fallback_min_duration_months) out.push(`fallback ≥ ${r.fallback_min_duration_months} months`);
-  if (r.max_duration_months) out.push(`≤ ${r.max_duration_months} months`);
-  if (r.min_amount != null) out.push(`amount ≥ ${r.min_amount.toLocaleString()}`);
-  if (r.max_amount != null) out.push(`amount ≤ ${r.max_amount.toLocaleString()}`);
-  if (r.must_include_any?.length) out.push(`mentions ${r.must_include_any.join(" / ")}`);
-  if (r.must_not_include_any?.length) out.push(`never “${r.must_not_include_any.join("”, “")}”`);
+  if (r.min_duration_months) out.push(c.minMonths(r.min_duration_months));
+  if (r.fallback_min_duration_months) out.push(c.fallbackMonths(r.fallback_min_duration_months));
+  if (r.max_duration_months) out.push(c.maxMonths(r.max_duration_months));
+  if (r.min_amount != null) out.push(c.minAmount(r.min_amount.toLocaleString()));
+  if (r.max_amount != null) out.push(c.maxAmount(r.max_amount.toLocaleString()));
+  if (r.max_percent != null) out.push(c.maxPercent(r.max_percent));
+  if (r.must_include_any?.length) out.push(c.mentions(r.must_include_any.join(" / ")));
+  if (r.must_not_include_any?.length) out.push(c.never(r.must_not_include_any.join("”, “")));
   return out;
 }
 
 export default function PlaybooksPage() {
+  const t = useT();
+  const vi = useLocale() === "vi";
   const list = useQuery({ queryKey: ["playbooks"], queryFn: api.playbooks });
   const [key, setKey] = useState<string | null>(null);
   const active = key ?? list.data?.[0]?.key ?? null;
@@ -33,7 +37,7 @@ export default function PlaybooksPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">{t.nav.playbooks}</h1>
+        <h1 className="text-xl font-semibold">{t.playbooks.title}</h1>
         {list.isLoading && <Spinner />}
         <ErrorNote error={list.error} />
         <ul className="space-y-1">
@@ -49,7 +53,8 @@ export default function PlaybooksPage() {
               >
                 <div className="font-medium">{p.name}</div>
                 <div className="text-xs text-muted">
-                  {p.source === "tenant" ? `Firm · v${p.version}` : "Travo starter"} · {p.rules} rules ·{" "}
+                  {p.source === "tenant" ? t.playbooks.firm(p.version) : t.playbooks.starter} ·{" "}
+                  {t.playbooks.rules(p.rules)} ·{" "}
                   {p.governing_laws.join(", ")}
                 </div>
               </button>
@@ -64,29 +69,29 @@ export default function PlaybooksPage() {
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold">{detail.data.name}</h2>
               <Chip>{detail.data.contract_types.join(", ")}</Chip>
-              <Chip>{detail.data.governing_laws.join(", ")} law</Chip>
+              <Chip>{t.playbooks.law(detail.data.governing_laws.join(", "))}</Chip>
             </div>
             <table className="w-full text-sm">
               <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Clause</th>
-                  <th className="py-2 pr-3 font-medium">Firm position</th>
-                  <th className="py-2 pr-3 font-medium">Checks</th>
-                  <th className="py-2 font-medium">If breached</th>
+                  <th className="py-2 pr-3 font-medium">{t.playbooks.clause}</th>
+                  <th className="py-2 pr-3 font-medium">{t.playbooks.position}</th>
+                  <th className="py-2 pr-3 font-medium">{t.playbooks.checks}</th>
+                  <th className="py-2 font-medium">{t.playbooks.ifBreached}</th>
                 </tr>
               </thead>
               <tbody>
                 {detail.data.spec.rules.map((r) => (
                   <tr key={r.key} className="border-b border-border align-top last:border-0">
                     <td className="py-2 pr-3">
-                      <div className="font-medium">{humanize(r.clause_key)}</div>
-                      {r.required && <span className="text-xs text-muted">Required</span>}
+                      <div className="font-medium">{clauseName(t, r.clause_key)}</div>
+                      {r.required && <span className="text-xs text-muted">{t.playbooks.required}</span>}
                     </td>
                     <td className="py-2 pr-3">
-                      <div>{r.standard}</div>
+                      <div>{(vi && r.standard_vi) || r.standard}</div>
                       {r.rationale && <div className="mt-0.5 text-xs text-muted">{r.rationale}</div>}
                     </td>
-                    <td className="py-2 pr-3 text-xs">{checks(r).join(" · ") || "—"}</td>
+                    <td className="py-2 pr-3 text-xs">{checks(t, r).join(" · ") || "—"}</td>
                     <td className="py-2">
                       <SeverityBadge severity={r.severity ?? "medium"} />
                     </td>

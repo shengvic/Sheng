@@ -33,7 +33,52 @@ SYSTEM = load_prompt("bilingual_check")
 BATCH = 8
 MAX_CHARS = 2000
 SEVERITIES = {"high", "medium", "low"}
-LANG_NAME = {"vi": "Vietnamese", "en": "English"}
+
+# Summaries in the review's output language (ADR-023).
+TEXT: dict[str, dict[str, Any]] = {
+    "en": {
+        "lang": {"vi": "Vietnamese", "en": "English"},
+        "labels": {
+            "amount": "Amounts", "percent": "Percentages", "duration": "Durations (months)",
+            "date": "Dates", "tax_code": "Tax codes", "number": "Numbers",
+        },
+        "only": "{lang} only: {values}",
+        "differ": "{label} differ between versions ({parts}).",
+        "missing": "No {lang} text found for this clause.",
+        "figure_words": "Amount in figures ({fig}) does not match the amount in words ({words}) "
+        "in the {lang} text.",
+        "negation": "Only the {lang} text contains a negation — check that both versions state "
+        "the same obligation.",
+        "contradict": "The language clauses contradict each other: the {a} text says the {pa} "
+        "version prevails, the {b} text says the {pb} version prevails.",
+        "no_prevailing": "No clause says which language version prevails if the two versions "
+        "differ.",
+        "prevails": "The {lang} version prevails under the contract's language clause; the other "
+        "version should be aligned to it.",
+        "no_prevailing_rationale": "The contract does not say which language version prevails.",
+    },
+    "vi": {
+        "lang": {"vi": "tiếng Việt", "en": "tiếng Anh"},
+        "labels": {
+            "amount": "Số tiền", "percent": "Tỷ lệ", "duration": "Thời hạn (tháng)",
+            "date": "Ngày", "tax_code": "Mã số thuế", "number": "Con số",
+        },
+        "only": "chỉ bản {lang}: {values}",
+        "differ": "{label} khác nhau giữa hai bản ({parts}).",
+        "missing": "Không tìm thấy bản {lang} của điều khoản này.",
+        "figure_words": "Số tiền bằng số ({fig}) không khớp với số tiền bằng chữ ({words}) "
+        "trong bản {lang}.",
+        "negation": "Chỉ bản {lang} có ý phủ định — kiểm tra để hai bản quy định cùng một "
+        "nghĩa vụ.",
+        "contradict": "Các điều khoản ngôn ngữ mâu thuẫn: bản {a} quy định ưu tiên bản {pa}, "
+        "bản {b} quy định ưu tiên bản {pb}.",
+        "no_prevailing": "Không có điều khoản quy định bản ngôn ngữ nào được ưu tiên khi hai bản "
+        "khác nhau.",
+        "prevails": "Theo điều khoản ngôn ngữ, bản {lang} được ưu tiên áp dụng; bản còn lại cần "
+        "được chỉnh cho thống nhất.",
+        "no_prevailing_rationale": "Hợp đồng không quy định bản ngôn ngữ nào được ưu tiên.",
+    },
+}  # fmt: skip
 
 _NEG = {
     "vi": re.compile(r"\b(không|chưa|cấm|nghiêm cấm)\b(?!\s+(?:trăm|gian))", re.I),
@@ -77,33 +122,41 @@ def _fmt(n: float) -> str:
 
 
 def _set_diff(
-    kind: str, severity: str, label: str, a: list[Any], b: list[Any], langs: tuple[str, str]
+    kind: str,
+    severity: str,
+    a: list[Any],
+    b: list[Any],
+    langs: tuple[str, str],
+    tx: dict[str, Any],
 ) -> Difference | None:
     ca, cb = Counter(a), Counter(b)
     if ca == cb:
         return None
     only_a = sorted((ca - cb).elements(), key=str)
     only_b = sorted((cb - ca).elements(), key=str)
-    pa, pb = LANG_NAME.get(langs[0], langs[0]), LANG_NAME.get(langs[1], langs[1])
     parts = []
-    if only_a:
-        parts.append(f"{pa} only: {', '.join(map(str, only_a))}")
-    if only_b:
-        parts.append(f"{pb} only: {', '.join(map(str, only_b))}")
-    return Difference(kind, severity, f"{label} differ between versions ({'; '.join(parts)}).")
+    for lang, only in ((langs[0], only_a), (langs[1], only_b)):
+        if only:
+            name = tx["lang"].get(lang, lang)
+            parts.append(tx["only"].format(lang=name, values=", ".join(map(str, only))))
+    summary = tx["differ"].format(label=tx["labels"][kind], parts="; ".join(parts))
+    return Difference(kind, severity, summary)
 
 
-def deterministic_diffs(pair: ClausePair, langs: tuple[str, str]) -> list[Difference]:
+def deterministic_diffs(
+    pair: ClausePair, langs: tuple[str, str], language: str = "en"
+) -> list[Difference]:
+    tx = TEXT.get(language, TEXT["en"])
     p, o = _nfc(pair.primary), _nfc(pair.other)
     out: list[Difference] = []
     if not o.strip():
         if p.strip() and pair.clause_key not in ("parties", "signatures"):
-            other = LANG_NAME.get(langs[1], langs[1])
+            other = tx["lang"].get(langs[1], langs[1])
             out.append(
                 Difference(
                     "missing_counterpart",
                     "medium",
-                    f"No {other} text found for this clause.",
+                    tx["missing"].format(lang=other),
                     confidence=0.7,
                 )
             )
@@ -116,8 +169,11 @@ def deterministic_diffs(pair: ClausePair, langs: tuple[str, str]) -> list[Differ
                     Difference(
                         "figure_words",
                         "high",
-                        f"Amount in figures ({_fmt(fw.figure)}) does not match the amount in "
-                        f"words ({_fmt(fw.words_value)}) in the {LANG_NAME.get(side, side)} text.",
+                        tx["figure_words"].format(
+                            fig=_fmt(fw.figure),
+                            words=_fmt(fw.words_value),
+                            lang=tx["lang"].get(side, side),
+                        ),
                         fw.span if side == langs[0] else "",
                         fw.span if side == langs[1] else "",
                         0.95,
@@ -126,24 +182,21 @@ def deterministic_diffs(pair: ClausePair, langs: tuple[str, str]) -> list[Differ
 
     am_p, am_o = parse_amounts(p), parse_amounts(o)
     d = _set_diff(
-        "amount", "high", "Amounts", [_fmt(a.value) for a in am_p],
-        [_fmt(a.value) for a in am_o], langs,
-    )  # fmt: skip
+        "amount", "high", [_fmt(a.value) for a in am_p], [_fmt(a.value) for a in am_o], langs, tx
+    )
     if d:
         d.primary_span = "; ".join(a.span for a in am_p)
         d.other_span = "; ".join(a.span for a in am_o)
         out.append(d)
-    for kind, label, fn in (
-        ("percent", "Percentages", percents),
-        ("duration", "Durations (months)", lambda t: [x.months for x in parse_durations(t)]),
-        ("date", "Dates", lambda t: [x.value.isoformat() for x in parse_dates(t)]),
+    for kind, fn in (
+        ("percent", percents),
+        ("duration", lambda t: [x.months for x in parse_durations(t)]),
+        ("date", lambda t: [x.value.isoformat() for x in parse_dates(t)]),
     ):
-        d = _set_diff(kind, "high", label, fn(p), fn(o), langs)
+        d = _set_diff(kind, "high", fn(p), fn(o), langs, tx)
         if d:
             out.append(d)
-    d = _set_diff(
-        "tax_code", "high", "Tax codes", _TAX_CODE.findall(p), _TAX_CODE.findall(o), langs
-    )
+    d = _set_diff("tax_code", "high", _TAX_CODE.findall(p), _TAX_CODE.findall(o), langs, tx)
     if d:
         out.append(d)
 
@@ -160,7 +213,7 @@ def deterministic_diffs(pair: ClausePair, langs: tuple[str, str]) -> list[Differ
         text = re.sub(r"\(\s*[a-zđ]\s*\)|^\s*\d{1,2}[.)]\s", " ", text, flags=re.I | re.M)
         return [str(int(float(n.replace(",", ".")))) for n in _NUMBER.findall(text)]
 
-    d = _set_diff("number", "medium", "Numbers", rest(p), rest(o), langs)
+    d = _set_diff("number", "medium", rest(p), rest(o), langs, tx)
     if d:
         d.confidence = 0.75
         out.append(d)
@@ -168,15 +221,9 @@ def deterministic_diffs(pair: ClausePair, langs: tuple[str, str]) -> list[Differ
     neg_p = bool(_NEG.get(langs[0], _NEG["en"]).search(p))
     neg_o = bool(_NEG.get(langs[1], _NEG["en"]).search(o))
     if neg_p != neg_o:
-        which = LANG_NAME.get(langs[0] if neg_p else langs[1])
+        which = tx["lang"].get(langs[0] if neg_p else langs[1])
         out.append(
-            Difference(
-                "negation",
-                "medium",
-                f"Only the {which} text contains a negation — check that both versions state "
-                "the same obligation.",
-                confidence=0.6,
-            )
+            Difference("negation", "medium", tx["negation"].format(lang=which), confidence=0.6)
         )
     return out
 
@@ -268,8 +315,9 @@ def _semantic(
 
 
 def check_bilingual(
-    ctx: AgentContext, pairs: list[ClausePair], langs: tuple[str, str]
+    ctx: AgentContext, pairs: list[ClausePair], langs: tuple[str, str], language: str = "en"
 ) -> list[FindingDraft]:
+    tx = TEXT.get(language, TEXT["en"])
     drafts: list[FindingDraft] = []
     by_index = {p.index: p for p in pairs}
     prev_p, prev_o, where = prevailing_language(pairs)
@@ -286,10 +334,9 @@ def check_bilingual(
             severity=d.severity,
             summary=d.summary,
             rationale=(
-                f"The {LANG_NAME.get(prevailing, prevailing)} version prevails under the "
-                "contract's language clause; the other version should be aligned to it."
+                tx["prevails"].format(lang=tx["lang"].get(prevailing, prevailing))
                 if prevailing
-                else "The contract does not say which language version prevails."
+                else tx["no_prevailing_rationale"]
             ),
             confidence=d.confidence,
             tier=tier,
@@ -303,7 +350,7 @@ def check_bilingual(
         )
 
     for pair in pairs:
-        for d in deterministic_diffs(pair, langs):
+        for d in deterministic_diffs(pair, langs, language):
             drafts.append(draft(pair.index, d, "T0"))
     if prev_p and prev_o and prev_p != prev_o:
         drafts.append(
@@ -312,10 +359,12 @@ def check_bilingual(
                 Difference(
                     "prevailing_language",
                     "high",
-                    "The language clauses contradict each other: the "
-                    f"{LANG_NAME.get(langs[0])} text says the {LANG_NAME.get(prev_p)} version "
-                    f"prevails, the {LANG_NAME.get(langs[1])} text says the "
-                    f"{LANG_NAME.get(prev_o)} version prevails.",
+                    tx["contradict"].format(
+                        a=tx["lang"].get(langs[0]),
+                        pa=tx["lang"].get(prev_p),
+                        b=tx["lang"].get(langs[1]),
+                        pb=tx["lang"].get(prev_o),
+                    ),
                 ),
                 "T0",
             )
@@ -327,7 +376,7 @@ def check_bilingual(
                 Difference(
                     "prevailing_language",
                     "medium",
-                    "No clause says which language version prevails if the two versions differ.",
+                    tx["no_prevailing"],
                     confidence=0.8,
                 ),
                 "T0",

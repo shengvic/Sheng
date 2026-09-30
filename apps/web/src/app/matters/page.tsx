@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button, Card, Chip, ErrorNote, Field, Spinner, inputClass } from "@/components/ui";
-import { t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 import { api } from "@/lib/api";
 import { when } from "@/lib/format";
 
 const JURISDICTIONS = ["SG", "MY", "VN", "ID"] as const;
 
 function NewMatter({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const qc = useQueryClient();
   const router = useRouter();
   const [number, setNumber] = useState("");
@@ -74,7 +75,7 @@ function NewMatter({ onDone }: { onDone: () => void }) {
             {t.matters.save}
           </Button>
           <Button type="button" variant="ghost" onClick={onDone}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <ErrorNote error={create.error} />
         </div>
@@ -84,6 +85,7 @@ function NewMatter({ onDone }: { onDone: () => void }) {
 }
 
 export default function MattersPage() {
+  const t = useT();
   const matters = useQuery({ queryKey: ["matters"], queryFn: api.matters });
   const [creating, setCreating] = useState(false);
   return (
@@ -105,11 +107,11 @@ export default function MattersPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
               <tr>
-                <th className="px-4 py-2 font-medium">Number</th>
-                <th className="px-4 py-2 font-medium">Matter</th>
-                <th className="px-4 py-2 font-medium">Jurisdictions</th>
-                <th className="px-4 py-2 font-medium">Model policy</th>
-                <th className="px-4 py-2 font-medium">Opened</th>
+                <th className="px-4 py-2 font-medium">{t.matters.columns.number}</th>
+                <th className="px-4 py-2 font-medium">{t.matters.columns.matter}</th>
+                <th className="px-4 py-2 font-medium">{t.matters.columns.jurisdictions}</th>
+                <th className="px-4 py-2 font-medium">{t.matters.columns.policy}</th>
+                <th className="px-4 py-2 font-medium">{t.matters.columns.opened}</th>
               </tr>
             </thead>
             <tbody>
@@ -124,9 +126,9 @@ export default function MattersPage() {
                   <td className="px-4 py-2">{m.jurisdictions.join(", ")}</td>
                   <td className="px-4 py-2">
                     {m.deny_providers.length ? (
-                      <Chip tone="warn">No {m.deny_providers.join(", ")}</Chip>
+                      <Chip tone="warn">{t.matters.noProviders(m.deny_providers.join(", "))}</Chip>
                     ) : (
-                      <span className="text-muted">Firm default</span>
+                      <span className="text-muted">{t.matters.firmDefault}</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-muted">{when(m.created_at)}</td>

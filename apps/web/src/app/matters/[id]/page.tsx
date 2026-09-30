@@ -8,10 +8,10 @@ import { useState } from "react";
 import { StepProgress } from "@/components/StepProgress";
 import { UploadDrop } from "@/components/UploadDrop";
 import { Button, Card, Chip, ErrorNote, Spinner, cx, inputClass } from "@/components/ui";
-import { t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 import { api } from "@/lib/api";
 import { bytes, usd, when } from "@/lib/format";
-import type { DocumentRow, Review } from "@/lib/types";
+import type { DocumentRow, OutputLanguage, Review } from "@/lib/types";
 
 const STATUS_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = {
   classified: "ok",
@@ -25,12 +25,14 @@ const STATUS_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = {
 };
 
 function DocumentRowView({ doc, reviews }: { doc: DocumentRow; reviews: Review[] }) {
+  const t = useT();
   const qc = useQueryClient();
   const router = useRouter();
   const playbooks = useQuery({ queryKey: ["playbooks"], queryFn: api.playbooks });
   const [playbook, setPlaybook] = useState("");
+  const [output, setOutput] = useState<OutputLanguage | "">("");
   const start = useMutation({
-    mutationFn: () => api.startReview(doc.id, playbook || undefined),
+    mutationFn: () => api.startReview(doc.id, playbook || undefined, output || undefined),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["reviews", doc.matter_id] });
       router.push(`/reviews/${r.id}`);
@@ -42,35 +44,56 @@ function DocumentRowView({ doc, reviews }: { doc: DocumentRow; reviews: Review[]
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-medium">{doc.filename}</span>
-          <Chip tone={STATUS_TONE[doc.parse_status] ?? "neutral"}>{doc.parse_status.replace("_", " ")}</Chip>
+          <Chip tone={STATUS_TONE[doc.parse_status] ?? "neutral"}>
+            {t.matter.status[doc.parse_status] ?? doc.parse_status}
+          </Chip>
           {doc.contract_type && <Chip>{doc.contract_type}</Chip>}
-          {doc.governing_law && <Chip>{doc.governing_law} law</Chip>}
+          {doc.governing_law && <Chip>{t.matter.law(doc.governing_law)}</Chip>}
+          {doc.bilingual_layout !== "single" && (
+            <Chip tone="accent" data-testid="bilingual-layout">
+              {t.matter.layout[doc.bilingual_layout] ?? doc.bilingual_layout}
+            </Chip>
+          )}
           {doc.languages.map((l) => (
             <Chip key={l}>{l}</Chip>
           ))}
         </div>
         <div className="mt-0.5 text-xs text-muted">
-          {doc.parties.join(" · ") || "Parties not detected"} · {bytes(doc.size_bytes)} · {when(doc.created_at)}
+          {doc.parties.join(" · ") || t.matter.partiesUnknown} · {bytes(doc.size_bytes)} · {when(doc.created_at)}
         </div>
         {doc.error && <div className="mt-1 text-xs text-high">{doc.error}</div>}
       </div>
       <div className="flex items-center gap-2">
         {latest && (
           <Link href={`/reviews/${latest.id}`} className="text-sm text-accent hover:underline">
-            Open latest review
+            {t.matter.openLatest}
           </Link>
         )}
         <select
           className={cx(inputClass, "w-48")}
           value={playbook}
           onChange={(e) => setPlaybook(e.target.value)}
-          aria-label="Playbook"
+          aria-label={t.matter.playbook}
           disabled={doc.parse_status !== "classified"}
         >
           <option value="">{t.matter.playbookAuto}</option>
           {playbooks.data?.map((p) => (
             <option key={`${p.source}:${p.key}`} value={p.key}>
-              {p.name} {p.source === "tenant" ? `(firm v${p.version})` : "(starter)"}
+              {p.name} {p.source === "tenant" ? t.matter.firmVersion(p.version) : t.matter.starter}
+            </option>
+          ))}
+        </select>
+        <select
+          className={cx(inputClass, "w-44")}
+          value={output}
+          onChange={(e) => setOutput(e.target.value as OutputLanguage | "")}
+          aria-label={t.matter.outputLanguage}
+          title={t.matter.outputLanguage}
+          disabled={doc.parse_status !== "classified"}
+        >
+          {(["", "vi", "en", "both"] as const).map((o) => (
+            <option key={o} value={o}>
+              {t.matter.output[o || "auto"]}
             </option>
           ))}
         </select>
@@ -92,6 +115,7 @@ function DocumentRowView({ doc, reviews }: { doc: DocumentRow; reviews: Review[]
 }
 
 export default function MatterPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const matter = useQuery({ queryKey: ["matter", id], queryFn: () => api.matter(id) });
@@ -119,16 +143,16 @@ export default function MatterPage() {
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold">{m.name}</h1>
           <span className="font-mono text-xs text-muted">{m.number}</span>
-          <Chip tone="accent" title="Only matter members can see this matter's content">
+          <Chip tone="accent" title={t.matter.wallHelp}>
             🔒 {t.matter.wall}
           </Chip>
-          <Chip>{m.jurisdictions.join(" · ") || "No jurisdiction"}</Chip>
+          <Chip>{m.jurisdictions.join(" · ") || t.matter.noJurisdiction}</Chip>
           {m.deny_providers.length > 0 && (
-            <Chip tone="warn" title="The model router never sends this matter's data to these providers">
-              No {m.deny_providers.join(", ")}
+            <Chip tone="warn" title={t.matter.denyHelp}>
+              {t.matters.noProviders(m.deny_providers.join(", "))}
             </Chip>
           )}
-          {m.residency && <Chip tone="warn">{m.residency} residency</Chip>}
+          {m.residency && <Chip tone="warn">{t.matter.residency(m.residency)}</Chip>}
         </div>
       </div>
 
@@ -157,9 +181,9 @@ export default function MatterPage() {
               return (
                 <li key={r.id} className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 last:border-0">
                   <Link href={`/reviews/${r.id}`} className="font-medium text-accent hover:underline">
-                    {doc?.filename ?? "Document"}
+                    {doc?.filename ?? t.matter.document}
                   </Link>
-                  <Chip tone={STATUS_TONE[r.status] ?? "neutral"}>{r.status}</Chip>
+                  <Chip tone={STATUS_TONE[r.status] ?? "neutral"}>{t.matter.status[r.status] ?? r.status}</Chip>
                   <span className="text-xs text-muted">
                     {r.playbook_key} v{r.playbook_version} · {usd(r.cost_usd)} · {when(r.created_at)}
                   </span>

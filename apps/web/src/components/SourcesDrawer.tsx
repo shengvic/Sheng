@@ -3,12 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 import { api } from "@/lib/api";
 
 import { Button, Chip, ErrorNote, Spinner } from "./ui";
 
 export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: () => void }) {
+  const t = useT();
   const unit = useQuery({ queryKey: ["legal-unit", unitId], queryFn: () => api.legalUnit(unitId) });
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => closeRef.current?.focus(), []);
@@ -23,7 +24,7 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="font-semibold">{t.review.sources}</h2>
-        <Button ref={closeRef} variant="ghost" size="sm" onClick={onClose} aria-label="Close sources">
+        <Button ref={closeRef} variant="ghost" size="sm" onClick={onClose} aria-label={t.review.closeSources}>
           ✕
         </Button>
       </div>
@@ -55,13 +56,15 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Chip tone={u.status === "in_force" ? "ok" : "bad"}>{u.status.replace("_", " ")}</Chip>
-              {u.effective_from && <Chip>from {u.effective_from}</Chip>}
-              {u.effective_to && <Chip>to {u.effective_to}</Chip>}
-              {u.review_status === "verified" && <Chip tone="ok">checked by a lawyer</Chip>}
-              {u.retrieved_at && <Chip>retrieved {u.retrieved_at.slice(0, 10)}</Chip>}
+              <Chip tone={u.status === "in_force" ? "ok" : "bad"}>{t.review.unitStatus[u.status] ?? u.status}</Chip>
+              {u.effective_from && <Chip>{t.review.from(u.effective_from)}</Chip>}
+              {u.effective_to && <Chip>{t.review.to(u.effective_to)}</Chip>}
+              {u.review_status === "verified" && <Chip tone="ok">{t.review.verified}</Chip>}
+              {u.retrieved_at && <Chip>{t.review.retrieved(u.retrieved_at.slice(0, 10))}</Chip>}
             </div>
-            <blockquote className="doc-text border-l-2 border-accent pl-3">{u.text}</blockquote>
+            <blockquote className="doc-text whitespace-pre-wrap border-l-2 border-accent pl-3" lang={u.jurisdiction === "VN" ? "vi" : undefined}>
+              {u.text}
+            </blockquote>
             {!u.is_fixture && u.issuing_body && (
               <p className="text-xs text-muted" data-testid="source-attribution">
                 {t.review.sourceBy} {u.issuing_body}
@@ -69,7 +72,7 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
             )}
             {u.official_url?.startsWith("https://") && (
               <a className="text-sm text-accent hover:underline" href={u.official_url} target="_blank" rel="noreferrer">
-                Official source ↗
+                {t.review.officialSource}
               </a>
             )}
           </>

@@ -2,6 +2,7 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
+import { useT } from "@/i18n/context";
 import type { Severity } from "@/lib/types";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
@@ -41,6 +42,7 @@ const SEVERITY_STYLE: Record<Severity, string> = {
 };
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
+  const t = useT();
   return (
     <span
       className={cx(
@@ -48,7 +50,7 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
         SEVERITY_STYLE[severity],
       )}
     >
-      {severity === "info" ? "OK" : severity}
+      {t.severity[severity] ?? severity}
     </span>
   );
 }
@@ -57,14 +59,17 @@ export function Chip({
   children,
   tone = "neutral",
   title,
+  "data-testid": testId,
 }: {
   children: ReactNode;
   tone?: "neutral" | "accent" | "ok" | "warn" | "bad";
   title?: string;
+  "data-testid"?: string;
 }) {
   return (
     <span
       title={title}
+      data-testid={testId}
       className={cx(
         "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[11px] font-medium",
         tone === "neutral" && "border-border text-muted",

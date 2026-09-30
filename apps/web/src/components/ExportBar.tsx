@@ -1,8 +1,7 @@
 "use client";
 
-import { t } from "@/i18n/en";
+import { findingTitle, useT } from "@/i18n/context";
 import type { ExportGate, Finding } from "@/lib/types";
-import { humanize } from "@/lib/findings";
 
 import { Button, Chip } from "./ui";
 
@@ -21,10 +20,11 @@ export function ExportBar({
   onJump: (findingId: string) => void;
   lastExport: string | null;
 }) {
+  const t = useT();
   if (!gate) return null;
   const byId = new Map(findings.map((f) => [f.id, f]));
   return (
-    <section className="rounded-lg border border-border bg-surface p-3" aria-label="Export" data-testid="export-bar">
+    <section className="rounded-lg border border-border bg-surface p-3" aria-label={t.review.export} data-testid="export-bar">
       <div className="flex flex-wrap items-center gap-2">
         {gate.open ? (
           <Chip tone="ok">{t.review.gateOpen}</Chip>
@@ -46,14 +46,13 @@ export function ExportBar({
         <ul className="mt-2 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
           {gate.blocking.map((b, i) => {
             const f = b.finding_id ? byId.get(b.finding_id) : undefined;
+            const name = f ? findingTitle(t, f) : t.review.finding;
             const label =
               b.type === "citation_unsupported"
-                ? `Citation ${b.status?.replace("_", " ")} — ${f ? humanize(f.rule_key) : "finding"}`
+                ? t.review.gateCitation(t.citation[b.status ?? ""] ?? b.status ?? "", name)
                 : b.type === "review_not_completed"
-                  ? `Review ${b.status}`
-                  : f
-                    ? humanize(f.rule_key)
-                    : "Finding";
+                  ? t.review.gateReview(t.matter.status[b.status ?? ""] ?? b.status ?? "")
+                  : name;
             return (
               <li key={i}>
                 <button
@@ -68,7 +67,7 @@ export function ExportBar({
           })}
         </ul>
       )}
-      {lastExport && <p className="mt-2 text-xs text-muted">Downloaded {lastExport}</p>}
+      {lastExport && <p className="mt-2 text-xs text-muted">{t.review.downloaded(lastExport)}</p>}
     </section>
   );
 }

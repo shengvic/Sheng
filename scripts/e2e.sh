@@ -79,6 +79,9 @@ done
 
 export E2E_BASE_URL="http://localhost:$WEB_PORT"  # Next dev blocks dev assets for 127.0.0.1
 export E2E_FIXTURES="$ROOT/evals/gold/nda"
+# Synthetic bilingual VI | EN NDA with seeded discrepancies (evals/vn_fixtures.py).
+export E2E_VN_DOCX="$WORK/nda_vi_en.docx"
+uv run python -c "import sys; from evals.vn_fixtures import table_docx, seeded_clauses; open(sys.argv[1], 'wb').write(table_docx(seeded_clauses()))" "$E2E_VN_DOCX"
 status=0
 (cd apps/web && pnpm exec playwright test "$@") || status=$?
 if [ "$status" != 0 ]; then

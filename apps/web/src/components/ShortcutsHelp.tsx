@@ -1,22 +1,12 @@
 "use client";
 
-import { t } from "@/i18n/en";
+import { useT } from "@/i18n/context";
 
 import { Button } from "./ui";
 
-const ROWS: [string, string][] = [
-  ["J / ↓", "Next finding"],
-  ["K / ↑", "Previous finding"],
-  ["A", "Accept"],
-  ["E", "Edit wording"],
-  ["R", "Reject (reason required)"],
-  ["D", "Defer"],
-  ["S", "Open first source"],
-  ["Esc", "Close / cancel"],
-  ["?", "This help"],
-];
 
 export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
+  const t = useT();
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div
@@ -28,7 +18,7 @@ export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
       >
         <h2 className="mb-3 font-semibold">{t.review.shortcuts}</h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-          {ROWS.map(([k, v]) => (
+          {t.review.shortcutRows.map(([k, v]) => (
             <div key={k} className="contents">
               <dt>
                 <kbd className="rounded border border-border bg-surface-2 px-1.5 font-mono text-xs">{k}</kbd>
@@ -38,7 +28,7 @@ export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
           ))}
         </dl>
         <Button className="mt-4 w-full" onClick={onClose} autoFocus>
-          Close
+          {t.common.close}
         </Button>
       </div>
     </div>

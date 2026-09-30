@@ -1,4 +1,4 @@
-import type { Disposition, Finding, Severity } from "./types";
+import type { Finding, Severity } from "./types";
 
 export const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2, info: 3 };
 
@@ -62,13 +62,6 @@ export function counts(findings: Finding[]) {
   };
 }
 
-export const DISPOSITION_LABEL: Record<Disposition, string> = {
-  accepted: "Accepted",
-  edited: "Edited",
-  rejected: "Rejected",
-  deferred: "Deferred",
-};
-
 /** Split law notes into readable text and cite markers ([[src:ID]]). */
 export function splitCites(text: string): { text: string; cite?: string }[] {
   const out: { text: string; cite?: string }[] = [];
@@ -84,6 +77,6 @@ export function splitCites(text: string): { text: string; cite?: string }[] {
 }
 
 export function humanize(key: string): string {
-  const s = key.replace(/^law:[A-Z]{2}:/, "").replace(/_/g, " ");
+  const s = key.replace(/^(law:[A-Z]{2}:|bilingual:)/, "").replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 }

@@ -143,3 +143,51 @@ def test_output_language_can_be_chosen(client, make_tenant):
         f"/v1/documents/{doc['id']}/reviews", json={"output_language": "en"}, headers=t.headers()
     ).json()
     assert run["options"] == {"output_language": "en"}
+
+
+def test_vietnamese_review_text_and_bilingual_exports(client, make_tenant):
+    import io
+    import zipfile
+
+    from docx import Document
+
+    from tests.conftest import DOCX_MIME, create_matter, run_reviews
+
+    t = make_tenant()
+    matter = create_matter(client, t, jurisdictions=["VN"])
+    doc = client.post(
+        f"/v1/matters/{matter['id']}/documents",
+        files={"file": ("nda.docx", vn.table_docx(vn.seeded_clauses()), DOCX_MIME)},
+        headers=t.headers(),
+    ).json()
+    run = client.post(f"/v1/documents/{doc['id']}/reviews", json={}, headers=t.headers()).json()
+    run_reviews()
+    findings = client.get(f"/v1/reviews/{run['id']}/findings", headers=t.headers()).json()
+    by_rule = {f["rule_key"]: f for f in findings}
+    # Offline (T0) summaries are written in Vietnamese for a Vietnamese deliverable.
+    assert by_rule["exclusions_present"]["summary"] == "Không có điều khoản Trường hợp loại trừ."
+    assert by_rule["bilingual:duration"]["summary"].startswith("Thời hạn (tháng) khác nhau")
+    for f in findings:
+        r = client.patch(f"/v1/findings/{f['id']}", json={"action": "accept"}, headers=t.headers())
+        assert r.status_code == 200, r.text
+    assert client.get(f"/v1/reviews/{run['id']}/export-gate", headers=t.headers()).json()["open"]
+
+    def export(fmt: str) -> bytes:
+        row = client.post(
+            f"/v1/reviews/{run['id']}/exports", json={"format": fmt}, headers=t.headers()
+        )
+        assert row.status_code == 201, row.text
+        return client.get(f"/v1/exports/{row.json()['id']}", headers=t.headers()).content
+
+    redline = export("redline_docx")
+    table = Document(io.BytesIO(redline)).tables[0]
+    assert len(table.columns) == 2
+    xml = zipfile.ZipFile(io.BytesIO(redline)).read("word/document.xml").decode()
+    # The missing exclusions clause is inserted in both languages as tracked changes.
+    assert "Nghĩa vụ bảo mật không áp dụng" in xml and "The obligations in this Agreement" in xml
+    assert xml.count("<w:ins") >= 2
+    memo = Document(io.BytesIO(export("memo_docx")))
+    headings = [p.text for p in memo.paragraphs if p.style.name.startswith("Heading")]
+    assert headings[0].startswith("Bản ghi nhớ rà soát hợp đồng")
+    assert "Danh sách vấn đề" in headings and "Tóm tắt (tiếng Anh)" in headings
+    assert memo.tables[0].rows[0].cells[0].text == "Điều khoản"

@@ -236,6 +236,9 @@ export interface PlaybookRule {
   max_duration_months?: number | null;
   min_amount?: number | null;
   max_amount?: number | null;
+  max_percent?: number | null;
+  standard_vi?: string;
+  redline_template_vi?: string | null;
   must_include_any?: string[];
   must_not_include_any?: string[];
 }
