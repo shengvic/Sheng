@@ -58,6 +58,8 @@ export interface Clause {
   lang_alt: string | null;
 }
 
+export type OutputLanguage = "vi" | "en" | "both";
+
 export type RunStatus = "queued" | "running" | "completed" | "failed";
 
 export interface ReviewStep {
@@ -85,7 +87,10 @@ export interface Review {
     negotiation_points?: string[];
     findings?: number;
     needs_human?: number;
+    executive_summary_en?: string;
+    negotiation_points_en?: string[];
   };
+  options: { output_language?: OutputLanguage };
   created_at: string;
   finished_at: string | null;
   steps: ReviewStep[];
@@ -127,6 +132,7 @@ export interface Finding {
   summary: string;
   rationale: string;
   suggested_redline: string | null;
+  suggested_redline_alt: string | null;
   confidence: number;
   model_tier: string | null;
   escalated: boolean;

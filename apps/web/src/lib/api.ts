@@ -17,6 +17,7 @@ import type {
   LegalUnit,
   Matter,
   Me,
+  OutputLanguage,
   PlaybookSummary,
   ReasonCode,
   Review,
@@ -99,10 +100,13 @@ export function createClient(fetchImpl: Fetch = (...a) => fetch(...a)) {
       return request<DocumentRow>(`/v1/matters/${matterId}/documents`, { method: "POST", body: form });
     },
     clauses: (documentId: string) => request<Clause[]>(`/v1/documents/${documentId}/clauses`),
-    startReview: (documentId: string, playbookKey?: string) =>
+    startReview: (documentId: string, playbookKey?: string, outputLanguage?: OutputLanguage) =>
       request<Review>(`/v1/documents/${documentId}/reviews`, {
         method: "POST",
-        body: json(playbookKey ? { playbook_key: playbookKey } : {}),
+        body: json({
+          ...(playbookKey ? { playbook_key: playbookKey } : {}),
+          ...(outputLanguage ? { output_language: outputLanguage } : {}),
+        }),
       }),
     reviews: (matterId: string) => request<Review[]>(`/v1/matters/${matterId}/reviews`),
     review: (id: string) => request<Review>(`/v1/reviews/${id}`),

@@ -269,6 +269,8 @@ class ReviewRun(Base):
     error: Mapped[str | None] = mapped_column(Text)
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6), default=0)
     summary: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    # {"output_language": "vi" | "en" | "both"} (ADR-023)
+    options: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = _created()
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -304,6 +306,8 @@ class Finding(Base):
     summary: Mapped[str] = mapped_column(Text)
     rationale: Mapped[str] = mapped_column(Text, default="")
     suggested_redline: Mapped[str | None] = mapped_column(Text)
+    # Bilingual contracts: the same redline in the document's other language (ADR-023).
+    suggested_redline_alt: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float] = mapped_column(Float)
     model_tier: Mapped[str | None] = mapped_column(String(4))
     escalated: Mapped[bool] = mapped_column(Boolean, default=False)

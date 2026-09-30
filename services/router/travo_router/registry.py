@@ -34,6 +34,10 @@ class Endpoint(BaseModel):
     enabled: bool = True
     # Env var holding the Travo-owned API key (billing travo/proxy).
     api_key_env: str | None = None
+    # Provider terms: no retention of prompts/outputs (zero data retention). [verify] per contract.
+    zdr: bool = False
+    # Languages the model is rated for (router preference, not a hard filter).
+    languages: list[str] = Field(default_factory=list)
 
     @property
     def parties(self) -> set[str]:

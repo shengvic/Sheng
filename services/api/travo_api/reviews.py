@@ -85,8 +85,18 @@ def resolve_playbook(actor: Actor, doc: Document, playbook_key: str | None) -> t
 # ---------------------------------------------------------------- enqueue
 
 
+def default_output_language(doc: Document) -> str:
+    if doc.bilingual_layout != "single":
+        return "both"
+    return "vi" if doc.primary_language == "vi" else "en"
+
+
 def start_review(
-    actor: Actor, matter: Matter, doc: Document, playbook_key: str | None
+    actor: Actor,
+    matter: Matter,
+    doc: Document,
+    playbook_key: str | None,
+    output_language: str | None = None,
 ) -> ReviewRun:
     if doc.parse_status != "classified":
         raise HTTPException(409, f"document is {doc.parse_status}; cannot review")
@@ -102,6 +112,7 @@ def start_review(
         initiated_by=actor.user_id,
         status="queued",
         summary={},
+        options={"output_language": output_language or default_output_language(doc)},
     )
     actor.session.add(run)
     actor.session.flush()
@@ -113,7 +124,11 @@ def start_review(
         resource_type="review_run",
         resource_id=run.id,
         matter_id=matter.id,
-        details={"playbook": f"{pb.key}@{pb.version}", "source": source},
+        details={
+            "playbook": f"{pb.key}@{pb.version}",
+            "source": source,
+            "output_language": run.options["output_language"],
+        },
     )
     emit(
         actor.session,
@@ -158,8 +173,26 @@ def _clauses(sc: StepContext) -> list[Clause]:
 
 def _clause_dicts(clauses: list[Clause]) -> list[dict[str, Any]]:
     return [
-        {"i": c.idx, "key": c.taxonomy_key, "heading": c.heading, "text": c.text} for c in clauses
+        {
+            "i": c.idx,
+            "key": c.taxonomy_key,
+            "heading": c.heading,
+            "text": c.text,
+            "lang": c.lang,
+            "text_alt": c.text_alt,
+            "lang_alt": c.lang_alt,
+        }
+        for c in clauses
     ]
+
+
+def _languages(sc: StepContext) -> tuple[str, str, str | None]:
+    """(output_language, document primary language, other language or None)."""
+    doc = sc.session.get(Document, sc.run.document_id)
+    primary = (doc.primary_language if doc else None) or "en"
+    other = "en" if primary == "vi" and doc and doc.bilingual_layout != "single" else None
+    out = (sc.run.options or {}).get("output_language") or "en"
+    return out, primary, other
 
 
 def _add_finding(sc: StepContext, d: FindingDraft, clause_ids: dict[int, uuid.UUID]) -> Finding:
@@ -286,7 +319,10 @@ def step_lawcheck(sc: StepContext) -> dict[str, Any]:
 
     clauses = _clauses(sc)
     ids = {c.idx: c.id for c in clauses}
-    notes = lawcheck(ctx, pack, _clause_dicts(clauses), retrieve, validate)
+    out_lang, _, _ = _languages(sc)
+    # Law notes quote the authoritative text; Vietnamese law is written in Vietnamese.
+    note_lang = "vi" if out_lang in ("vi", "both") else "en"
+    notes = lawcheck(ctx, pack, _clause_dicts(clauses), retrieve, validate, language=note_lang)
     for draft, results in notes:
         draft.summary = draft.note or draft.summary
         f = _add_finding(sc, draft, ids)
@@ -366,16 +402,28 @@ def step_redline(sc: StepContext) -> dict[str, Any]:
                 confidence=f.confidence,
                 tier=f.model_tier,
                 redline_template=rule.redline_template if rule else None,
+                redline_template_vi=rule.redline_template_vi if rule else None,
             )
         )
     examples = few_shot_examples(
         sc, {f.clause_key for f in rows}, get_review_config().few_shot_examples
     )
-    draft_redlines(ctx, drafts, clauses, examples, {k: r.standard for k, r in rules.items()})
+    out_lang, primary, other = _languages(sc)
+    standards = {
+        k: (r.standard_vi or r.standard) if primary == "vi" else r.standard
+        for k, r in rules.items()
+    }
+    # The redline replaces the document's own (primary-language) text; a bilingual document
+    # also gets the same change in its other language.
+    first = primary if out_lang in ("both", primary) or other is None else out_lang
+    draft_redlines(ctx, drafts, clauses, examples, standards, language=first)
+    if out_lang == "both" and other:
+        draft_redlines(ctx, drafts, clauses, examples, standards, language=other, alt=True)
     written = 0
     for f, d in zip(rows, drafts, strict=True):
         if d.suggested_redline:
             f.suggested_redline = d.suggested_redline
+            f.suggested_redline_alt = d.suggested_redline_alt
             written += 1
     return {
         "redlines": written,
@@ -387,18 +435,22 @@ def step_redline(sc: StepContext) -> dict[str, Any]:
 def step_memo(sc: StepContext) -> dict[str, Any]:
     ctx, rctx = _agent_ctx(sc)
     rows = list(sc.session.scalars(select(Finding).where(Finding.run_id == sc.run.id)))
-    memo = write_memo(
-        ctx,
-        [
-            {
-                "clause_key": f.clause_key,
-                "classification": f.classification,
-                "severity": f.severity,
-                "summary": f.summary,
-            }
-            for f in rows
-        ],
-    )
+    items = [
+        {
+            "clause_key": f.clause_key,
+            "kind": f.kind,
+            "classification": f.classification,
+            "severity": f.severity,
+            "summary": f.summary,
+        }
+        for f in rows
+    ]
+    out_lang, _, _ = _languages(sc)
+    memo = write_memo(ctx, items, language="vi" if out_lang in ("vi", "both") else "en")
+    if out_lang == "both":  # bilingual deliverable: an English summary as well
+        en = write_memo(ctx, items, language="en")
+        memo["executive_summary_en"] = en["executive_summary"]
+        memo["negotiation_points_en"] = en["negotiation_points"]
     sc.run.summary = {
         **memo,
         "findings": len(rows),

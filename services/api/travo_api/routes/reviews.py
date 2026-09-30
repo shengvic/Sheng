@@ -60,7 +60,13 @@ def create_review(
 ) -> ReviewOut:
     doc = require_document(actor, document_id)
     matter = require_matter(actor, doc.matter_id)
-    run = start_review(actor, matter, doc, body.playbook_key if body else None)
+    run = start_review(
+        actor,
+        matter,
+        doc,
+        body.playbook_key if body else None,
+        body.output_language if body else None,
+    )
     if get_settings().inline_reviews:
         after_commit(actor.session, _run_inline)
     return _review_out(actor, run)

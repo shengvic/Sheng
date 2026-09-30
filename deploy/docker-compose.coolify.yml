@@ -35,6 +35,9 @@ services:
       TRAVO_INLINE_REVIEWS: "false"
       TRAVO_REQUIRE_VERIFIED_SOURCES: "true"
       TRAVO_REGION_CELL: ${TRAVO_REGION_CELL:-VN}
+      # VN pilot default: model APIs outside Vietnam stay off until a firm's DPA and transfer
+      # dossier are signed (ADR-022/023); switched per firm in the admin policy editor.
+      TRAVO_DEFAULT_POLICY_FILE: ${TRAVO_DEFAULT_POLICY_FILE:-/app/config/default_policy_vn.yaml}
       TRAVO_FETCH_CONTACT: ${TRAVO_FETCH_CONTACT:-}
       # Model provider keys: an endpoint in config/endpoints.yaml is enabled only if its key is set.
       TRAVO_FIREWORKS_API_KEY: ${TRAVO_FIREWORKS_API_KEY:-}

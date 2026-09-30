@@ -26,6 +26,24 @@ endpoints:
     price_in_per_mtok: 0.9
     price_out_per_mtok: 0.9
 
+  # Pilot T1 (ADR-022): open-weight model through OpenRouter, pay per token, billed to Travo.
+  # Model id, languages and retention terms are [verify] before real client data.
+  - id: openrouter-t1-openweight
+    provider: qwen
+    via: openrouter
+    model: qwen/qwen-2.5-72b-instruct
+    tier: T1
+    billing: travo
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: TRAVO_OPENROUTER_API_KEY
+    regions: ["US"]
+    capabilities: [json_output, long_context]
+    max_context: 32000
+    price_in_per_mtok: 0.4
+    price_out_per_mtok: 0.4
+    languages: [en, vi]
+    zdr: false
+
   - id: openai-byo-frontier
     provider: openai
     model: gpt-5

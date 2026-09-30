@@ -130,3 +130,48 @@ def test_invalid_policy_rejected(bad):
 
 def test_ctx_helper_is_consistent():
     assert Ctx().policy() == ModelPolicy()
+
+
+def test_offshore_processing_switch_keeps_data_in_home_region():
+    vn_off = ModelPolicy.model_validate(
+        {"data_location": {"home_region": "VN", "allow_offshore_processing": False}}
+    )
+    p = plan(policy=vn_off)
+    assert [c.endpoint_id for c in p.candidates] == ["rules"]  # only self-hosted T0
+    r = reasons(p)
+    assert r["ow-t1"] == r["ow-t1-sg"] == "offshore_processing_denied"
+    vn_on = ModelPolicy.model_validate(
+        {"data_location": {"home_region": "VN", "allow_offshore_processing": True}}
+    )
+    assert plan(policy=vn_on).candidates[0].endpoint_id == "ow-t1"
+
+
+def test_language_rated_endpoint_preferred_within_tier():
+    from travo_router.registry import EndpointRegistry
+
+    from tests.router_helpers import ep
+
+    eps = EndpointRegistry(
+        [
+            ep("cheap-en", "travo", "T1", via="a", adapter="a", regions=["US"],
+               price_in_per_mtok=1, languages=["en"]),
+            ep("vi-rated", "travo", "T1", via="b", adapter="b", regions=["US"],
+               price_in_per_mtok=3, languages=["en", "vi"]),
+        ]
+    ).all()  # fmt: skip
+    desc = TaskDescriptor(
+        task_type="clause_extraction", tenant_id="t", matter_id="m", languages=["vi", "en"]
+    )
+    p = ENGINE.plan(desc, ModelPolicy(), eps)
+    assert [c.endpoint_id for c in p.candidates] == ["vi-rated", "cheap-en"]
+    desc_en = desc.model_copy(update={"languages": ["en"]})
+    assert ENGINE.plan(desc_en, ModelPolicy(), eps).candidates[0].endpoint_id == "cheap-en"
+
+
+def test_vn_default_policy_file_keeps_offshore_off():
+    from pathlib import Path
+
+    text = (Path(__file__).resolve().parents[1] / "config/default_policy_vn.yaml").read_text()
+    policy = ModelPolicy.from_yaml(text)
+    assert policy.data_location.home_region == "VN"
+    assert policy.data_location.allow_offshore_processing is False

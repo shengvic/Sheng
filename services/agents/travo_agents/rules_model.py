@@ -135,8 +135,10 @@ def _law_check(payload: dict[str, Any]) -> dict[str, Any]:
         return {"note": "", "confidence": 0.0}
     top = evidence[0]
     issue = str(payload.get("issue", "")).rstrip(". ")
-    note = f'{issue}: the provision states "{_first_sentence(top["text"])}" [[src:{top["id"]}]].'
-    return {"note": note, "confidence": 0.6}
+    quote = f'"{_first_sentence(top["text"])}" [[src:{top["id"]}]].'
+    if payload.get("language") == "Vietnamese":
+        return {"note": f"{issue}: quy định nêu {quote}", "confidence": 0.6}
+    return {"note": f"{issue}: the provision states {quote}", "confidence": 0.6}
 
 
 def _validate(payload: dict[str, Any]) -> dict[str, Any]:
@@ -163,10 +165,24 @@ def _memo(payload: dict[str, Any]) -> dict[str, Any]:
     missing = [
         f["clause_key"].replace("_", " ") for f in issues if f.get("classification") == "missing"
     ]
+    mismatches = sum(1 for f in issues if f.get("kind") == "bilingual")
+    if payload.get("language") == "Vietnamese":
+        summary = (
+            f"Phát hiện {len(issues)} vấn đề ({by_sev['high']} mức cao, {by_sev['medium']} mức "
+            f"trung bình, {by_sev['low']} mức thấp) qua {len(fs)} lượt kiểm tra."
+        )
+        if mismatches:
+            summary += f" {mismatches} điểm không thống nhất giữa bản tiếng Việt và tiếng Anh."
+        if missing:
+            summary += f" Thiếu điều khoản: {', '.join(missing)}."
+        points = [f["summary"] for f in issues if f.get("severity") in ("high", "medium")]
+        return {"executive_summary": summary, "negotiation_points": points}
     summary = (
         f"{len(issues)} issue(s) identified ({by_sev['high']} high, {by_sev['medium']} medium, "
         f"{by_sev['low']} low) across {len(fs)} playbook and legal checks."
     )
+    if mismatches:
+        summary += f" {mismatches} mismatch(es) between the Vietnamese and English versions."
     if missing:
         summary += f" Missing clauses: {', '.join(missing)}."
     points = [f["summary"] for f in issues if f.get("severity") in ("high", "medium")]

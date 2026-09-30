@@ -102,3 +102,44 @@ def test_bilingual_review_step_end_to_end(client, make_tenant):
         assert (key, kind) in types, (key, kind, types)
     fw = next(f for f in bilingual if f["evidence"]["type"] == "figure_words")
     assert "200.000.000" in fw["evidence"]["primary_span"] and fw["severity"] == "high"
+
+
+def test_bilingual_review_writes_both_languages(client, make_tenant):
+    from tests.conftest import DOCX_MIME, create_matter, run_reviews
+
+    t = make_tenant()
+    matter = create_matter(client, t, jurisdictions=["VN"])
+    doc = client.post(
+        f"/v1/matters/{matter['id']}/documents",
+        files={"file": ("nda.docx", vn.table_docx(), DOCX_MIME)},
+        headers=t.headers(),
+    ).json()
+    run = client.post(f"/v1/documents/{doc['id']}/reviews", json={}, headers=t.headers()).json()
+    assert run["options"] == {"output_language": "both"}
+    run_reviews()
+    review = client.get(f"/v1/reviews/{run['id']}", headers=t.headers()).json()
+    assert review["summary"]["executive_summary"].startswith("Phát hiện")
+    assert "issue(s) identified" in review["summary"]["executive_summary_en"]
+    findings = client.get(f"/v1/reviews/{run['id']}/findings", headers=t.headers()).json()
+    excl = next(f for f in findings if f["rule_key"] == "exclusions_present")
+    assert excl["classification"] == "missing"
+    assert excl["suggested_redline"].startswith("Nghĩa vụ bảo mật không áp dụng")
+    assert excl["suggested_redline_alt"].startswith("The obligations in this Agreement")
+    law = [f for f in findings if f["kind"] == "law"]
+    assert law and all(any(ch in f["summary"] for ch in "ểệạ") for f in law)  # Vietnamese
+
+
+def test_output_language_can_be_chosen(client, make_tenant):
+    from tests.conftest import DOCX_MIME, create_matter
+
+    t = make_tenant()
+    matter = create_matter(client, t, jurisdictions=["VN"])
+    doc = client.post(
+        f"/v1/matters/{matter['id']}/documents",
+        files={"file": ("nda.docx", vn.table_docx(), DOCX_MIME)},
+        headers=t.headers(),
+    ).json()
+    run = client.post(
+        f"/v1/documents/{doc['id']}/reviews", json={"output_language": "en"}, headers=t.headers()
+    ).json()
+    assert run["options"] == {"output_language": "en"}

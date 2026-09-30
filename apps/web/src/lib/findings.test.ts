@@ -24,6 +24,7 @@ function f(p: Partial<Finding>): Finding {
     summary: "",
     rationale: "",
     suggested_redline: null,
+    suggested_redline_alt: null,
     confidence: 0.8,
     model_tier: "T0",
     escalated: false,

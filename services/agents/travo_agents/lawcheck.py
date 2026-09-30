@@ -54,6 +54,7 @@ def lawcheck(
     clauses: list[dict[str, Any]],
     retrieve: Retrieve,
     validate: Validate,
+    language: str = "en",
 ) -> list[tuple[FindingDraft, list[CitationResult]]]:
     out: list[tuple[FindingDraft, list[CitationResult]]] = []
     for rule in pack.rules:
@@ -63,7 +64,7 @@ def lawcheck(
             body = f"{clause.get('heading', '')} {clause['text']}".lower()
             if rule.triggers and not any(t.lower() in body for t in rule.triggers):
                 continue
-            out.append(_check(ctx, pack, rule, clause, retrieve, validate))
+            out.append(_check(ctx, pack, rule, clause, retrieve, validate, language))
     return out
 
 
@@ -74,7 +75,9 @@ def _check(
     clause: dict[str, Any],
     retrieve: Retrieve,
     validate: Validate,
+    language: str = "en",
 ) -> tuple[FindingDraft, list[CitationResult]]:
+    issue = rule.issue_vi if language == "vi" and rule.issue_vi else rule.issue
     draft = FindingDraft(
         rule_key=f"law:{pack.jurisdiction}:{rule.key}",
         clause_key=clause["key"],
@@ -82,7 +85,7 @@ def _check(
         kind="law",
         classification="legal_note",
         severity=rule.severity,
-        summary=rule.issue,
+        summary=issue,
         rationale="",
         confidence=0.0,
         tier=None,
@@ -93,7 +96,8 @@ def _check(
         draft.rationale = "No legal sources in the index address this issue (no_sources)."
         return draft, []
     payload = {
-        "issue": rule.issue,
+        "issue": issue,
+        "language": {"vi": "Vietnamese", "en": "English"}.get(language, language),
         "jurisdiction": pack.jurisdiction,
         "clause": {"heading": clause.get("heading", ""), "text": clause["text"][:2000]},
         "evidence": [{"id": h.id, "pinpoint": h.pinpoint, "text": h.text[:2500]} for h in hits],

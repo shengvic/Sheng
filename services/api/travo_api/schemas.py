@@ -139,6 +139,9 @@ class AuditOut(BaseModel):
 
 class ReviewStart(BaseModel):
     playbook_key: str | None = Field(default=None, max_length=80)
+    # Language of redlines, law notes and the memo. Default: "both" for bilingual
+    # documents, "vi" for Vietnamese ones, otherwise "en" (ADR-023).
+    output_language: Literal["vi", "en", "both"] | None = None
 
 
 class ReviewStepOut(BaseModel):
@@ -164,6 +167,7 @@ class ReviewOut(BaseModel):
     error: str | None
     cost_usd: float
     summary: dict[str, Any]
+    options: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     finished_at: datetime | None
     steps: list[ReviewStepOut] = Field(default_factory=list)
@@ -193,6 +197,7 @@ class FindingOut(BaseModel):
     summary: str
     rationale: str
     suggested_redline: str | None
+    suggested_redline_alt: str | None = None
     confidence: float
     model_tier: str | None
     escalated: bool

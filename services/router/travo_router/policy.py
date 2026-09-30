@@ -43,6 +43,18 @@ class MatterOverride(BaseModel):
     residency: str | None = None
 
 
+class DataLocation(BaseModel):
+    """Where a tenant's data may be processed (ADR-022/023).
+
+    With `allow_offshore_processing: false`, only endpoints serving `home_region` (or
+    self-hosted `*` ones, e.g. the T0 rules model) are eligible. A firm switches it on only
+    after its DPA and cross-border transfer dossier are in place.
+    """
+
+    home_region: str | None = None
+    allow_offshore_processing: bool = True
+
+
 class Budgets(BaseModel):
     per_matter_usd: float | None = None
     per_month_usd: float | None = None
@@ -70,6 +82,7 @@ class ModelPolicy(BaseModel):
     defaults: dict[TaskType, TaskRule] = Field(default_factory=dict)
     matter_overrides: dict[str, MatterOverride] = Field(default_factory=dict)
     budgets: Budgets = Field(default_factory=Budgets)
+    data_location: DataLocation = Field(default_factory=DataLocation)
 
     @classmethod
     def from_yaml(cls, text: str) -> ModelPolicy:
@@ -152,8 +165,12 @@ class PolicyEngine:
 
         pref_rank = TIER_RANK[preferred]
 
-        def order(item: tuple[Endpoint, float]) -> tuple[int, int, float]:
+        langs = set(descriptor.languages)
+
+        def order(item: tuple[Endpoint, float]) -> tuple[int, int, int, float]:
             ep, cost = item
+            # Within a tier, endpoints rated for the document's languages come first.
+            lang_miss = 0 if not langs or not ep.languages or langs <= set(ep.languages) else 1
             rank = TIER_RANK[ep.tier]
             # Preferred tier first, then lower tiers (cheaper fallbacks), then higher tiers.
             if rank == pref_rank:
@@ -163,7 +180,7 @@ class PolicyEngine:
             else:
                 bucket = 2
             distance = abs(rank - pref_rank)
-            return (bucket, distance, cost)
+            return (bucket, distance, lang_miss, cost)
 
         eligible.sort(key=order)
         candidates = [
@@ -218,6 +235,10 @@ class PolicyEngine:
             return "endpoint_disabled"
         if matter.residency and not ep.serves_region(matter.residency):
             return "residency"
+        home = policy.data_location.home_region
+        if home and not policy.data_location.allow_offshore_processing:
+            if not ep.serves_region(home):
+                return "offshore_processing_denied"
         if d.sensitivity == "restricted" and "*" not in ep.regions and not matter.residency:
             return "restricted_requires_self_hosted"
         missing = [c for c in d.requires if c not in ep.capabilities]

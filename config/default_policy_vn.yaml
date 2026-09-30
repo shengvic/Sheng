@@ -1,0 +1,26 @@
+# Default tenant model policy for the Vietnam pilot (ADR-022/023). Set via
+# TRAVO_DEFAULT_POLICY_FILE. Offshore processing (model APIs outside Vietnam) stays off until
+# the firm's DPA and cross-border transfer dossier are signed; then an admin switches
+# `allow_offshore_processing` to true in the policy editor. Until then reviews use the T0
+# rules model, deterministic checks and a lawyer.
+billing:
+  mode: byo_keys
+  fallback_to_proxy: false
+providers:
+  allow: null
+  deny: []
+defaults:
+  classify: { tier: T1 }
+  clause_extraction: { tier: T1 }
+  playbook_compare: { tier: T1, escalate_to: T2 }
+  law_check: { tier: T1, escalate_to: T2 }
+  validate_claim: { tier: T1, escalate_to: T2 }
+  redline: { tier: T1, escalate_to: T2 }
+  memo: { tier: T1, escalate_to: T2 }
+  bilingual_check: { tier: T1, escalate_to: T2 }
+budgets:
+  per_matter_usd: 300
+  per_month_usd: 20000
+data_location:
+  home_region: VN
+  allow_offshore_processing: false
