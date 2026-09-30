@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { OIDC_COOKIE, SESSION_COOKIE, apiUrl, publicOrigin, secureCookies } from "@/lib/server/config";
+import { clientIp } from "@/lib/forwarded";
+import {
+  OIDC_COOKIE,
+  SESSION_COOKIE,
+  apiUrl,
+  publicOrigin,
+  secureCookies,
+} from "@/lib/server/config";
 import { decodeTxn } from "@/lib/server/oidcCookie";
 
 // GET /auth/callback?code=…&state=… — IdP redirects here; the API exchanges the code.
@@ -22,6 +29,7 @@ export async function GET(request: NextRequest) {
     headers: {
       "content-type": "application/json",
       "user-agent": request.headers.get("user-agent") ?? "",
+      "x-travo-client-ip": clientIp(request.headers),
     },
     body: JSON.stringify({
       idp_id: txn.idpId,
@@ -32,6 +40,7 @@ export async function GET(request: NextRequest) {
     }),
     cache: "no-store",
   }).catch(() => null);
+  if (res?.status === 429) return fail("rate_limited");
   if (!res || !res.ok) return fail("signin_failed");
   const session = (await res.json()) as { token: string; expires_at: string };
 

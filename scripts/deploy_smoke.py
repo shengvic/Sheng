@@ -5,7 +5,9 @@ from prebuilt images, then checks, as a browser would through the web BFF:
 - migrations ran and the API serves as the non-owner role (`/healthz`, sign-in works under RLS);
 - CSP nonce header on pages; writes without the CSRF header are refused;
 - SSO sign-in (auth code + PKCE) against the mock IdP;
-- matter → upload → review, processed by the separate worker container.
+- matter → upload → review, processed by the separate worker container;
+- the Vietnam pilot defaults: Vietnamese UI, and a bilingual VI | EN contract reviewed with the
+  VN starter playbook and VI–EN discrepancy findings.
 
     API_IMAGE=travo-api:smoke WEB_IMAGE=travo-web:smoke uv run python scripts/deploy_smoke.py
 """
@@ -78,10 +80,39 @@ def main() -> None:
     print("deploy smoke test passed")
 
 
+def review(
+    c: httpx.Client, write: dict[str, str], matter_id: str, name: str, data: bytes, **opts: str
+) -> tuple[dict, dict, list[dict]]:
+    """Upload, start a review, wait for the worker; return (document, run, findings)."""
+    doc = (
+        c.post(
+            f"{WEB}/api/v1/matters/{matter_id}/documents",
+            files={"file": (name, data)},
+            headers=write,
+        )
+        .raise_for_status()
+        .json()
+    )
+    run = (
+        c.post(f"{WEB}/api/v1/documents/{doc['id']}/reviews", json=opts, headers=write)
+        .raise_for_status()
+        .json()
+    )
+    for _ in range(90):
+        run = c.get(f"{WEB}/api/v1/reviews/{run['id']}").raise_for_status().json()
+        if run["status"] in ("completed", "failed", "needs_human"):
+            break
+        time.sleep(1)
+    assert run["status"] == "completed", (name, run["status"], run.get("error"))
+    findings = c.get(f"{WEB}/api/v1/reviews/{run['id']}/findings").raise_for_status().json()
+    return doc, run, findings
+
+
 def run_checks() -> None:
     page = httpx.get(f"{WEB}/login")
     assert page.status_code == 200, page.status_code
     assert "nonce-" in page.headers.get("content-security-policy", ""), "missing CSP nonce"
+    assert '<html lang="vi"' in page.text, "the pilot UI should default to Vietnamese"
 
     tenant = cli("bootstrap-tenant", "Smoke Firm", "admin@smoke.test")
     tid = next(ln.split("=", 1)[1] for ln in tenant.splitlines() if ln.startswith("tenant_id="))
@@ -112,29 +143,31 @@ def run_checks() -> None:
             .json()
         )
         nda = ROOT / "evals/gold/nda/sg_mutual_nda.docx"
-        doc = (
+        _, _, findings = review(c, write, matter["id"], nda.name, nda.read_bytes())
+        assert findings, "review produced no findings"
+        print(f"review completed by the worker with {len(findings)} findings")
+
+        sys.path.insert(0, str(ROOT))
+        from evals import vn_fixtures  # synthetic FIXTURE contract, never client data
+
+        vn_matter = (
             c.post(
-                f"{WEB}/api/v1/matters/{matter['id']}/documents",
-                files={"file": (nda.name, nda.read_bytes())},
+                f"{WEB}/api/v1/matters",
+                json={"number": "SMOKE-VN", "name": "Thỏa thuận bảo mật", "jurisdictions": ["VN"]},
                 headers=write,
             )
             .raise_for_status()
             .json()
         )
-        run = (
-            c.post(f"{WEB}/api/v1/documents/{doc['id']}/reviews", json={}, headers=write)
-            .raise_for_status()
-            .json()
+        data = vn_fixtures.table_docx(vn_fixtures.seeded_clauses())
+        doc, run, findings = review(
+            c, write, vn_matter["id"], "nda_vi_en.docx", data, output_language="vi"
         )
-        for _ in range(90):
-            run = c.get(f"{WEB}/api/v1/reviews/{run['id']}").raise_for_status().json()
-            if run["status"] in ("completed", "failed", "needs_human"):
-                break
-            time.sleep(1)
-        assert run["status"] == "completed", run["status"]
-        findings = c.get(f"{WEB}/api/v1/reviews/{run['id']}/findings").raise_for_status().json()
-        assert findings, "review produced no findings"
-        print(f"review completed by the worker with {len(findings)} findings")
+        assert doc["bilingual_layout"] == "table", doc["bilingual_layout"]
+        assert run["playbook_key"] == "nda_vn", run["playbook_key"]
+        bilingual = [f for f in findings if f["kind"] == "bilingual"]
+        assert len(bilingual) >= len(vn_fixtures.SEEDED), [f["summary"] for f in bilingual]
+        print(f"VN bilingual review: {len(findings)} findings, {len(bilingual)} VI–EN mismatches")
 
 
 if __name__ == "__main__":

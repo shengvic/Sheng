@@ -1,6 +1,6 @@
 # 09 — Data Model & APIs
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [02](02-system-architecture.md), [06](06-security-compliance-ethical-walls.md)
+> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [02](02-system-architecture.md), [06](06-security-compliance-ethical-walls.md)
 
 ## 1. Core entities
 All tables include `tenant_id` (RLS key), `created_at`, `updated_at`, `created_by`. Matter-scoped tables also include `matter_id`.
@@ -96,3 +96,19 @@ DELETE /v1/admin/provider-credentials/{provider}
 ```
 Web BFF (Next.js route handlers): `GET /auth/login?email&next`, `GET /auth/callback`,
 `POST /auth/logout`, `POST /auth/dev` (dev only), `/api/*` → API with the session token.
+
+## 7. Added for the Vietnam pilot (2026-09-30, migrations 0005–0008)
+- **`documents`:** `primary_language`, `bilingual_layout` (single | table | inline |
+  paragraphs | halves).
+- **`clauses`:** `lang`, `heading_alt`, `text_alt`, `lang_alt`.
+- **`findings`:**
+  - `kind` adds `bilingual`; `classification` adds `discrepancy`.
+  - `evidence jsonb`: type, both spans, prevailing language.
+  - `suggested_redline_alt`.
+- **`review_runs.options`** (`{"output_language": "vi"|"en"|"both"}`).
+  `POST /v1/documents/{id}/reviews` accepts `output_language`.
+- **`legal_units.tsv_plain`:** an unaccented tsvector (`unaccent` via the immutable wrapper
+  `f_unaccent`), so searches without tone marks match.
+- **Sign-in:** `/v1/auth/oidc/start` and `/callback` return 429 with `Retry-After` beyond
+  `TRAVO_AUTH_RATE_LIMIT_PER_MINUTE` per client. The client is taken from `X-Travo-Client-IP`,
+  which the BFF sets.

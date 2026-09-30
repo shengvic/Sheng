@@ -24,7 +24,7 @@ from travo_agents.numbers import (
     figures_with_words,
     parse_amounts,
     parse_dates,
-    parse_durations,
+    parse_periods,
     percents,
 )
 from travo_agents.prompts import load_prompt
@@ -39,9 +39,10 @@ TEXT: dict[str, dict[str, Any]] = {
     "en": {
         "lang": {"vi": "Vietnamese", "en": "English"},
         "labels": {
-            "amount": "Amounts", "percent": "Percentages", "duration": "Durations (months)",
+            "amount": "Amounts", "percent": "Percentages", "duration": "Durations",
             "date": "Dates", "tax_code": "Tax codes", "number": "Numbers",
         },
+        "units": {"mo": "months", "h": "hours", "d": "days", "bd": "working days", "w": "weeks"},
         "only": "{lang} only: {values}",
         "differ": "{label} differ between versions ({parts}).",
         "missing": "No {lang} text found for this clause.",
@@ -60,9 +61,10 @@ TEXT: dict[str, dict[str, Any]] = {
     "vi": {
         "lang": {"vi": "tiếng Việt", "en": "tiếng Anh"},
         "labels": {
-            "amount": "Số tiền", "percent": "Tỷ lệ", "duration": "Thời hạn (tháng)",
+            "amount": "Số tiền", "percent": "Tỷ lệ", "duration": "Thời hạn",
             "date": "Ngày", "tax_code": "Mã số thuế", "number": "Con số",
         },
+        "units": {"mo": "tháng", "h": "giờ", "d": "ngày", "bd": "ngày làm việc", "w": "tuần"},
         "only": "chỉ bản {lang}: {values}",
         "differ": "{label} khác nhau giữa hai bản ({parts}).",
         "missing": "Không tìm thấy bản {lang} của điều khoản này.",
@@ -190,7 +192,7 @@ def deterministic_diffs(
         out.append(d)
     for kind, fn in (
         ("percent", percents),
-        ("duration", lambda t: [x.months for x in parse_durations(t)]),
+        ("duration", lambda t: [f"{x.value} {tx['units'][x.unit]}" for x in parse_periods(t)]),
         ("date", lambda t: [x.value.isoformat() for x in parse_dates(t)]),
     ):
         d = _set_diff(kind, "high", fn(p), fn(o), langs, tx)
@@ -203,7 +205,7 @@ def deterministic_diffs(
     # Standalone numbers not already covered (e.g. "30 ngày" vs "45 days").
     def rest(text: str) -> list[str]:
         spans = [a.span for a in parse_amounts(text)]
-        spans += [x.span for x in parse_durations(text)] + [x.span for x in parse_dates(text)]
+        spans += [x.span for x in parse_periods(text)] + [x.span for x in parse_dates(text)]
         spans += [fw.span for fw in figures_with_words(text)]
         for s in spans:
             text = text.replace(s, " ")

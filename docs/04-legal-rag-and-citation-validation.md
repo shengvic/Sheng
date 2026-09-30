@@ -195,3 +195,17 @@ entries as sections and missed Malay layouts. The splitter now works as follows:
   the 2024 amendments `[verify]`.
 - Current reprints and official URLs are needed before a lawyer runs `legal-verify`.
 
+## 10. As built — Vietnamese legislation (2026-09-30)
+- **Manifest:** `config/legal_sources/vn.yaml` lists 15 launch instruments (`format: vbpl_html`,
+  `language: vi`). Each has `url: null` until it is discovered on the VPS; the VN domains are
+  blocked in the dev network.
+- **Parser** (`travo_rag/sources/parsers_vn.py`):
+  - NFC normalisation; files in legacy TCVN3/VNI fonts are refused.
+  - Grammar: `Phần/Chương/Mục` → part, `Điều N.` → unit, with khoản/điểm kept in the text.
+  - Only consecutive article numbers start units, so quoted references stay text.
+  - Notes, closing formula and signature go to their own buckets; the effective date comes
+    from "có hiệu lực thi hành từ ngày …".
+  - Same accounting check as ADR-020.
+- **Retrieval:** NFC queries; two-letter syllables kept; stop words in English and Vietnamese;
+  matches on the accented and unaccented tsvectors combined.
+- **Pinpoints:** "Điều 2 Luật …". Citation checks normalise to NFC.

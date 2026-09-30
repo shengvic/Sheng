@@ -40,6 +40,18 @@ cover date: "As at …" / "Incorporating all amendments up to …". The report w
 is more than 5 years old. It cannot know about amendments made after a newer reprint, so check
 the portal's list of amendments.
 
+### 1b. Vietnam (VN)
+- Run on the VPS, or wherever `vbpl.vn` and the related domains are reachable. The dev
+  environment's network policy blocks them.
+- **Fill in the URLs:** `config/legal_sources/vn.yaml` ships with `url: null`. Find each
+  instrument's vbpl.vn full-text page (`toanvan`) and set `url`.
+- **Or import files by hand:**
+  `make legal-import FILE=luat.docx ID=VN/<id> URL=https://…` (DOCX or saved vbpl HTML).
+- **Fetch and parse:** `make legal-fetch JUR=VN`. Then check `out/legal/VN-review.md`: articles
+  (Điều) parsed, notes, the effective date and "accounting: 0".
+- **Encoding:** a legacy-encoded file (TCVN3/VNI) fails with "legacy Vietnamese font encoding".
+  Get a Unicode copy; never convert the statute text by hand.
+
 ## 2. Check the review report (legal engineer)
 Open `out/legal/SG-review.md`. For each parsed instrument:
 - Compare the section count with the portal's table of contents.

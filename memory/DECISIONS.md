@@ -168,3 +168,18 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
   - Data leaves Vietnam (Contabo has no VN region `[verify]`), so the §6 safeguards in docs/14 are mandatory before real client documents.
   - A single VPS is a single point of failure: backups plus a restore drill are required.
   - Containers stay portable to VN hosting later.
+
+## ADR-023 — Bilingual contracts as clause pairs; `bilingual` findings; output language; offshore switch
+- **Date:** 2026-09-30 · **Status:** Accepted
+- **Context:** Vietnamese commercial contracts are often bilingual: a VI | EN table, inline pairs, alternating paragraphs, or two halves. Usually one version prevails. Reviewing each language separately doubles findings and misses the most common defect: the two versions say different things.
+- **Decision:**
+  - **Clause pairs.** Segment the primary language (VI when present). Each clause carries its counterpart (`clauses.text_alt`, `heading_alt`, `lang_alt`), and `documents.bilingual_layout` records the layout. Playbook and law checks read the primary text.
+  - **Discrepancy findings.** VI–EN differences are findings with `kind = bilingual` and `classification = discrepancy`, and `evidence` holds both spans, the difference type and the prevailing language. They come from the new `bilingual` step:
+    - deterministic T0 checks: amounts, figures vs words, percentages, periods, dates, numbers, tax codes, negation, missing counterparts, prevailing language;
+    - a routed `bilingual_check` task for meaning. Its output is kept only when both quoted spans exist in the clause.
+  - **Output language.** Each review has an output language (`vi | en | both`, `review_runs.options`), defaulting to the document's primary language. Findings, redlines (`suggested_redline_alt` for the other version), memo and exports follow it. The UI locale is separate (`travo_locale` cookie, `TRAVO_DEFAULT_LOCALE`).
+  - **Offshore switch.** The policy hard filter `data_location.allow_offshore_processing` (with `home_region`) is off until the DPA and transfer dossier are in place (docs/14 §6). With it off, only first-party T0 runs.
+- **Consequences:**
+  - Export gating covers discrepancies too.
+  - Quality depends on the layout detector. The VN gold set (`evals/vn_gold.py`) covers all four contract types in two layouts, and its gates run in `make check`.
+  - Semantic checks need a T1 key and the offshore switch; without them the deterministic checks still run.

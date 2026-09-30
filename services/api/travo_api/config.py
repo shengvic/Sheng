@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     # Raw official snapshots fetched by `legal-fetch` (kept out of git; licensing).
     legal_snapshot_dir: Path = ROOT / ".data" / "legal_snapshots"
     legal_manifest_dir: Path = ROOT / "config" / "legal_sources"
+    # Sign-in attempts (/v1/auth/*) per client IP per minute; 0 disables (ratelimit.py).
+    auth_rate_limit_per_minute: int = 20
     region_cell: str = "SG"
     max_upload_bytes: int = 25 * 1024 * 1024
 

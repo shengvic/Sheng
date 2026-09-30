@@ -1,6 +1,6 @@
 # 05 — Contract & Agreement Review Workflow (MVP)
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [03](03-model-routing-and-hybrid-inference.md), [04](04-legal-rag-and-citation-validation.md), [08](08-ux-ui-spec.md)
+> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [03](03-model-routing-and-hybrid-inference.md), [04](04-legal-rag-and-citation-validation.md), [08](08-ux-ui-spec.md)
 
 ## 1. Workflow overview
 ```mermaid
@@ -109,3 +109,25 @@ Routing precedence: **client override → practice-group playbook → firm defau
   if policy forbids a higher tier the finding becomes `needs_human`.
 - **Export gate:** blocks while any non-`info` finding is undispositioned or deferred, or a
   non-rejected finding has a citation that is not `supported` and not overridden.
+
+## 10. As built — Vietnam pilot (2026-09-30, ADR-023)
+- **Steps:** `prepare → bilingual → compare → lawcheck → redline → memo`
+  (`config/review.yaml`). `bilingual` skips single-language documents.
+- **Reading.** DOCX is read in body order (paragraphs and table rows). `travo_rag/bilingual.py`
+  detects the layout (`table`, `inline`, `paragraphs`, `halves`) and gives each block its
+  primary-language text and counterpart. Segmentation runs on the primary language (VI when
+  present); "Điều N"/"Article N" headings start clauses, while `1.`/`a)` sub-items stay inside
+  them.
+- **Discrepancies** (`travo_agents/bilingual.py`):
+  - T0 checks, severity high: amounts, figures vs words, percentages, periods (months, weeks,
+    days, working days, hours), dates, tax codes.
+  - T0 checks, severity medium: other numbers, negation asymmetry, missing counterpart.
+  - Prevailing language: a finding if none is stated, or if the versions contradict each other.
+  - T1 `bilingual_check` for meaning. A model finding is kept only if both quoted spans occur
+    in the clause.
+- **Playbooks:** `nda_vn`, `commercial_vn` (SALE), `services_vn` (MSA), `dpa_vn`. These are
+  drafts with `[verify]` markers. New checks are `max_percent` (penalty cap), `standard_vi` and
+  `redline_template_vi`. Jurisdiction pack: `jurisdiction_packs/vn.yaml`.
+- **Output language** `vi | en | both` (default: the document's primary language). With `both`,
+  redlines carry `suggested_redline_alt` and the memo has an English summary. For bilingual
+  contracts the redline DOCX is a two-column table with tracked changes in each language.

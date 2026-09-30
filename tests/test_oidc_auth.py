@@ -282,3 +282,30 @@ def test_admin_extras(client, make_tenant):
         json={"issuer": "https://x.test", "client_id": "c", "email_domains": ["not a domain"]},
     )
     assert bad.status_code == 422
+
+
+def test_sign_in_is_rate_limited_per_client_ip(client, monkeypatch):
+    from travo_api.config import get_settings
+    from travo_api.ratelimit import SlidingWindow
+
+    monkeypatch.setattr(get_settings(), "auth_rate_limit_per_minute", 3)
+    body = {"email": "someone@nowhere.test"}
+
+    def start(ip: str) -> int:
+        return client.post(
+            "/v1/auth/oidc/start", json=body, headers={"X-Travo-Client-IP": ip}
+        ).status_code
+
+    assert [start("203.0.113.7") for _ in range(3)] == [404, 404, 404]
+    r = client.post("/v1/auth/oidc/start", json=body, headers={"X-Travo-Client-IP": "203.0.113.7"})
+    assert r.status_code == 429 and int(r.headers["retry-after"]) >= 1
+    cb = {"idp_id": str(uuid.uuid4()), "code": "x", "code_verifier": "v" * 43,
+          "redirect_uri": "https://x.test/auth/callback", "nonce": "n"}  # fmt: skip
+    r = client.post("/v1/auth/oidc/callback", json=cb, headers={"X-Travo-Client-IP": "203.0.113.7"})
+    assert r.status_code == 429  # the callback shares the budget
+    assert start("198.51.100.4") == 404  # other clients are unaffected
+
+    w = SlidingWindow(2, window=60)
+    assert w.hit("a", now=0) == 0 and w.hit("a", now=1) == 0
+    assert w.hit("a", now=2) == 58
+    assert w.hit("a", now=60.5) == 0  # the first attempt left the window

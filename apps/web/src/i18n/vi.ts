@@ -28,6 +28,7 @@ export const vi: Dict = {
       unavailable: "Dịch vụ đăng nhập của công ty đang tạm ngừng. Vui lòng thử lại sau.",
       denied: "Đăng nhập đã bị hủy tại nhà cung cấp danh tính.",
       signin_failed: "Đăng nhập không thành công. Nếu lỗi lặp lại, hãy liên hệ quản trị viên Travo của công ty.",
+      rate_limited: "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng đợi một phút rồi thử lại.",
     },
   },
   matters: {

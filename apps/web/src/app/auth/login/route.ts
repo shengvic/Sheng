@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { clientIp } from "@/lib/forwarded";
 import { authorizeUrl, randomToken, s256, safeNext } from "@/lib/pkce";
 import { OIDC_COOKIE, apiUrl, publicOrigin, secureCookies } from "@/lib/server/config";
 import { encodeTxn } from "@/lib/server/oidcCookie";
@@ -14,12 +15,13 @@ export async function GET(request: NextRequest) {
 
   const res = await fetch(`${apiUrl()}/v1/auth/oidc/start`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-travo-client-ip": clientIp(request.headers) },
     body: JSON.stringify({ email }),
     cache: "no-store",
   }).catch(() => null);
   if (!res) return fail("unavailable");
   if (res.status === 404) return fail("no_sso");
+  if (res.status === 429) return fail("rate_limited");
   if (!res.ok) return fail("unavailable");
   const start = (await res.json()) as {
     idp_id: string;

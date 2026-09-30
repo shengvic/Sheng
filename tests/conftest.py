@@ -187,7 +187,9 @@ def make_tenant(database: None):
 def client(database: None):
     from fastapi.testclient import TestClient
     from travo_api.main import create_app
+    from travo_api.ratelimit import reset_auth_limits
 
+    reset_auth_limits()
     with TestClient(create_app()) as c:
         yield c
 

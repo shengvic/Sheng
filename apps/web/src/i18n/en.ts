@@ -27,6 +27,7 @@ export const en = {
       unavailable: "Your firm's sign-in service is unavailable. Try again shortly.",
       denied: "Sign-in was cancelled at your identity provider.",
       signin_failed: "Sign-in failed. If this keeps happening, contact your firm's Travo admin.",
+      rate_limited: "Too many sign-in attempts. Wait a minute and try again.",
     } as Record<string, string>,
   },
   matters: {

@@ -82,12 +82,20 @@ def _save(doc) -> bytes:  # type: ignore[no-untyped-def]
     return buf.getvalue()
 
 
-def table_docx(clauses: Sequence[Clause] = NDA_CLAUSES, trailer: str | None = None) -> bytes:
+Pair = tuple[str, str]
+
+
+def table_docx(
+    clauses: Sequence[Clause] = NDA_CLAUSES,
+    trailer: str | None = None,
+    title: Pair = TITLE,
+    parties: Pair = PARTIES,
+) -> bytes:
     """Title and parties as paragraphs, then one table row per clause (VI | EN)."""
     doc = Document()
-    doc.add_heading(f"{TITLE[0]} / {TITLE[1]}", level=0)
-    doc.add_paragraph(PARTIES[0])
-    doc.add_paragraph(PARTIES[1])
+    doc.add_heading(f"{title[0]} / {title[1]}", level=0)
+    doc.add_paragraph(parties[0])
+    doc.add_paragraph(parties[1])
     table = doc.add_table(rows=0, cols=2)
     for n, (vh, vb, eh, eb, _) in enumerate(clauses, 1):
         row = table.add_row().cells
@@ -109,13 +117,15 @@ def inline_docx(clauses: Sequence[Clause] = NDA_CLAUSES) -> bytes:
     return _save(doc)
 
 
-def paragraphs_docx(clauses: Sequence[Clause] = NDA_CLAUSES) -> bytes:
+def paragraphs_docx(
+    clauses: Sequence[Clause] = NDA_CLAUSES, title: Pair = TITLE, parties: Pair = PARTIES
+) -> bytes:
     """Each VI paragraph followed by its EN paragraph."""
     doc = Document()
-    doc.add_heading(TITLE[0], level=0)
-    doc.add_paragraph(TITLE[1])
-    doc.add_paragraph(PARTIES[0])
-    doc.add_paragraph(PARTIES[1])
+    doc.add_heading(title[0], level=0)
+    doc.add_paragraph(title[1])
+    doc.add_paragraph(parties[0])
+    doc.add_paragraph(parties[1])
     for n, (vh, vb, eh, eb, _) in enumerate(clauses, 1):
         doc.add_paragraph(f"Điều {n}. {vh}")
         doc.add_paragraph(f"Article {n}. {eh}")

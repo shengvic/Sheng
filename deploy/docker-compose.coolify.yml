@@ -34,6 +34,7 @@ services:
       TRAVO_ALLOW_DEV_TOKENS: "false"
       TRAVO_INLINE_REVIEWS: "false"
       TRAVO_REQUIRE_VERIFIED_SOURCES: "true"
+      TRAVO_AUTH_RATE_LIMIT_PER_MINUTE: ${TRAVO_AUTH_RATE_LIMIT_PER_MINUTE:-20}
       TRAVO_REGION_CELL: ${TRAVO_REGION_CELL:-VN}
       # VN pilot default: model APIs outside Vietnam stay off until a firm's DPA and transfer
       # dossier are signed (ADR-022/023); switched per firm in the admin policy editor.
@@ -73,6 +74,8 @@ services:
       TRAVO_API_URL: http://api:8000
       # The public https origin, e.g. https://app.example.vn (OIDC redirect_uri is built from it).
       TRAVO_PUBLIC_URL: ${TRAVO_PUBLIC_URL:?set TRAVO_PUBLIC_URL}
+      # UI language for users who have not picked one (ADR-021: Vietnam first).
+      TRAVO_DEFAULT_LOCALE: ${TRAVO_DEFAULT_LOCALE:-vi}
     expose:
       - "3000"
     depends_on:

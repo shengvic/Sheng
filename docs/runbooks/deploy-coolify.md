@@ -23,7 +23,11 @@ and checks the following:
 - writes without the CSRF header are refused;
 - invalid sessions are rejected;
 - SSO sign-in works (auth code + PKCE);
-- matter → upload → review is completed by the separate worker container.
+- matter → upload → review is completed by the separate worker container;
+- the UI defaults to Vietnamese;
+- a bilingual VI | EN NDA is reviewed with `nda_vn` and yields VI–EN discrepancy findings.
+
+Also run `make eval`: it fails if the Vietnam pilot gates are not met (docs/11 §3).
 
 ## 2. First deployment
 1. **Server basics**, if not already done:

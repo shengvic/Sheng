@@ -1,6 +1,6 @@
 # 14 — Vietnam-First Launch Plan
 
-> **Status:** Draft v2 (MVP pilot decisions, ADR-022) · **Last updated:** 2026-09-30 · **Related:** ADR-021, ADR-022, [01](01-product-vision-and-prd.md), [04](04-legal-rag-and-citation-validation.md), [05](05-contract-review-workflow.md), [06](06-security-compliance-ethical-walls.md), [08](08-ux-ui-spec.md), [11](11-evaluation-and-quality.md), [12](12-roadmap.md), [13](13-open-questions.md)
+> **Status:** Draft v3 (pilot release-ready, ADR-023) · **Last updated:** 2026-09-30 · **Related:** ADR-021, ADR-022, [01](01-product-vision-and-prd.md), [04](04-legal-rag-and-citation-validation.md), [05](05-contract-review-workflow.md), [06](06-security-compliance-ethical-walls.md), [08](08-ux-ui-spec.md), [11](11-evaluation-and-quality.md), [12](12-roadmap.md), [13](13-open-questions.md)
 >
 > **Legal references in this document are from memory as of 2026-09-30. Every instrument number,
 > article and date is `[verify]` until a Vietnamese-qualified lawyer confirms it against the
@@ -273,15 +273,15 @@ VN legal engineer. The Coolify pilot removes the VN-cell infrastructure from the
 | # | Workstream | Weeks | Depends on | Main code |
 |---|---|---|---|---|
 | V0 | Decisions and inputs: VN1–VN7 (§10), VN legal engineer, 2–3 design partners, T1 shortlist | 0–2 | Founder | — |
-| V1 | VN legal corpus: `vn.yaml`, encoding normalisation, `parsers_vn.py`, vbpl HTML/DOCX, validity relationships, `unaccent` + syllable search, 15 instruments imported and verified | 1–6 | Official texts (VN3), lawyer | `travo_rag/sources/*`, migration 0005, `retrieval.py`, `citations.py` |
+| V1 | VN legal corpus: `vn.yaml`, encoding normalisation, `parsers_vn.py`, vbpl HTML/DOCX, validity relationships, `unaccent` + syllable search, 15 instruments imported and verified — **code done 2026-09-30** (manifest with `url: null`, parser, migration 0008, NFC citations, Vietnamese pinpoints). Content waits for network access to the VN domains (or runs on the VPS) and a lawyer's `legal-verify`; validity relationships not started | 1–6 | Official texts (VN3), lawyer | `travo_rag/sources/*`, migration 0005, `retrieval.py`, `citations.py` |
 | V2 | Dense cross-lingual retrieval: pgvector, CPU multilingual embeddings on the VPS, RRF fusion | 2–6 | — | `retrieval.py` (DenseRetriever hook), migration |
-| V3 | Bilingual contracts: DOCX table parsing, Khoản/Điểm segmentation, alignment, T0 discrepancy checks (including the figures-vs-words parser), semantic discrepancy task, prevailing language, `bilingual_discrepancy` findings | 2–8 | T1 endpoint for the semantic part | `parsing.py`, `segmentation.py`, new `travo_agents/bilingual.py`, `checks.py`, `reviews.py` |
-| V4 | VN jurisdiction pack and playbooks: `jurisdiction_packs/vn.yaml`, `playbooks/{nda_vn,commercial_vn,services_vn,dpa_vn}.yaml`, VN machine checks (§4), Vietnamese prompts, lawyer sign-off | 3–8 | V1, VN legal engineer | `config/*`, `travo_agents/checks.py`, `prompts/` |
-| V5 | Models and routing: T1 evaluation in Vietnamese on hosted APIs, endpoint `languages`/`region`/`zdr`, `allow_offshore_processing` hard filter | 2–6 | Q5, API keys | `travo_router/*`, `config/endpoints.yaml`, `default_policy.yaml` |
+| V3 | Bilingual contracts: DOCX table parsing, Khoản/Điểm segmentation, alignment, T0 discrepancy checks (including the figures-vs-words parser), semantic discrepancy task, prevailing language, `bilingual_discrepancy` findings — **done 2026-09-30** (four layouts; findings `kind = bilingual`, ADR-023) | 2–8 | T1 endpoint for the semantic part | `parsing.py`, `segmentation.py`, new `travo_agents/bilingual.py`, `checks.py`, `reviews.py` |
+| V4 | VN jurisdiction pack and playbooks: `jurisdiction_packs/vn.yaml`, `playbooks/{nda_vn,commercial_vn,services_vn,dpa_vn}.yaml`, VN machine checks (§4), Vietnamese prompts, lawyer sign-off — **drafts done 2026-09-30**, every legal reference `[verify]`; lawyer sign-off open | 3–8 | V1, VN legal engineer | `config/*`, `travo_agents/checks.py`, `prompts/` |
+| V5 | Models and routing: T1 evaluation in Vietnamese on hosted APIs, endpoint `languages`/`region`/`zdr`, `allow_offshore_processing` hard filter — **routing done 2026-09-30** (`default_policy_vn.yaml`, OpenRouter T1 endpoint `[verify]`); T1 evaluation in Vietnamese needs an API key | 2–6 | Q5, API keys | `travo_router/*`, `config/endpoints.yaml`, `default_policy.yaml` |
 | V6 | Pilot deployment — **done 2026-09-30:** Dockerfiles (api/worker, web), Coolify compose, production guard, https-only IdPs, backups script, local smoke test, runbook. The VPS already runs Coolify; the deploy itself waits for SSH access. | 1–3 | VPS access | `deploy/`, `scripts/deploy_smoke.py`, `docs/runbooks/deploy-coolify.md` |
-| V7 | Vietnamese UX: `vi.ts`, locale formats, bilingual canvas, VI/EN memos, bilingual redline DOCX | 4–10 | V3 | `apps/web/src/*`, `exports.py` |
+| V7 | Vietnamese UX: `vi.ts`, locale formats, bilingual canvas, VI/EN memos, bilingual redline DOCX — **done 2026-09-30** (`TRAVO_DEFAULT_LOCALE=vi` in the pilot) | 4–10 | V3 | `apps/web/src/*`, `exports.py` |
 | V8 | Compliance: DPA (VI/EN), impact assessment dossiers, breach runbook, legal opinions (Decree 53, Law on Lawyers), privacy notice | 0–10 | Counsel | `docs/06`, legal |
-| V9 | Evals and pilot readiness: VN gold sets (§8), gates in CI, SCIM/rate limits/pen test (from P1), onboarding | 6–14 | V1–V7 | `evals/`, CI |
+| V9 | Evals and pilot readiness: VN gold sets (§8), gates in CI, SCIM/rate limits/pen test (from P1), onboarding — **partly done 2026-09-30:** synthetic VN gold set + gates in `make check`/`make eval`, sign-in rate limit, VN e2e and deploy smoke. Real-contract gold set, SCIM, pen test and onboarding open | 6–14 | V1–V7 | `evals/`, CI |
 
 SG/MY: keep the build green. Finish the MY corpus only when inputs arrive; no new SG/MY
 features until the VN pilot starts.
@@ -342,4 +342,22 @@ Postgres, API, worker, web, and CPU embeddings for a pilot of 2–3 firms. Scale
   `TRAVO_ALLOW_DEV_TOKENS=true` without a dev flag.
 - `docs/runbooks/deploy-coolify.md`: first install, hardening, backups and restore drill,
   upgrades, rollback.
+
+## 13. Release status (2026-09-30)
+
+The source is **release-ready for the pilot** in the sense of the release plan: a lawyer can sign
+in (SSO) to a Vietnamese UI and review a Vietnamese-only, English-only or bilingual NDA, sale,
+services or DPA contract. The review includes clause pairing, VI–EN discrepancy findings, draft
+VN playbooks and VI/EN/both redlines and memos. Gates passed: `make check`, `make web-check`,
+`make e2e` (including the Vietnamese flow), `make eval` (VN gates) and `make deploy-smoke`
+(including a bilingual review by the worker).
+
+What the pilot does **not** have yet, by design:
+- **No verified VN legal corpus.** Law findings say "needs lawyer" until instruments are fetched
+  (`legal-fetch -j VN` on the VPS), ingested and `legal-verify`-ed.
+- **Draft playbooks** (`[verify]` throughout) until a Vietnamese-qualified lawyer signs them off.
+- **Synthetic evals only.** The VN gold set is generated (`evals/vn_gold.py`); a set of real,
+  consented contracts is needed before quality claims.
+- **No DPA or transfer dossier.** Until §6 is complete, `allow_offshore_processing` stays
+  false and no real client documents are used; T0 rules still run.
 

@@ -66,7 +66,10 @@ CLAUSE_TAXONOMY: dict[str, tuple[str, list[str]]] = {
             "harta intelek",
         ],
     ),
-    "no_warranty": ("Information provided as-is", ["warrant", "as is", "bảo đảm", "jaminan"]),
+    "no_warranty": (
+        "Information provided as-is",
+        ["warrant", "no warranty", "as is", "bảo đảm", "không bảo đảm", "jaminan"],
+    ),
     "remedies": (
         "Injunctive relief and remedies",
         ["remed", "injunct", "biện pháp", "ganti rugi", "pemulihan", "relief"],
@@ -180,6 +183,7 @@ CLAUSE_TAXONOMY: dict[str, tuple[str, list[str]]] = {
             "security measures",
             "technical and organisational",
             "biện pháp bảo vệ",
+            "biện pháp bảo mật",
             "biện pháp an ninh",
         ],
     ),
@@ -193,7 +197,14 @@ CLAUSE_TAXONOMY: dict[str, tuple[str, list[str]]] = {
     ),
     "breach_notification": (
         "Personal data breach notification",
-        ["breach notification", "data breach", "vi phạm dữ liệu", "sự cố dữ liệu"],
+        [
+            "breach notification",
+            "data breach",
+            "vi phạm dữ liệu",
+            "sự cố dữ liệu",
+            "thông báo vi phạm",
+            "thông báo sự cố",
+        ],
     ),
     "other": ("Not in taxonomy", []),
 }

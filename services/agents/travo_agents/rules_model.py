@@ -102,10 +102,12 @@ def extract_rule(clause: dict[str, Any]) -> dict[str, Any]:
     for key, (_desc, hints) in CLAUSE_TAXONOMY.items():
         score = 0.0
         for h in hints:
+            # A longer (more specific) hint wins a tie: "warranty" beats "warrant".
+            bonus = min(len(h), 30) / 1000
             if _contains(heading, h):
-                score = max(score, 0.9 if len(h) > 4 else 0.6)
+                score = max(score, (0.9 if len(h) > 4 else 0.6) + bonus)
             elif _contains(body, h):
-                score = max(score, 0.45 if len(h) > 6 else 0.25)
+                score = max(score, (0.45 if len(h) > 6 else 0.25) + bonus)
         if score > best_score:
             best, best_score = key, score
     if clause.get("heading", "").lower() == "preamble":

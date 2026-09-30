@@ -16,3 +16,4 @@ export const secureCookies = () =>
 export function publicOrigin(requestUrl: string): string {
   return (process.env.TRAVO_PUBLIC_URL ?? new URL(requestUrl).origin).replace(/\/$/, "");
 }
+

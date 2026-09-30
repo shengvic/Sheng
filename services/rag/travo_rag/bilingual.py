@@ -25,6 +25,13 @@ EN_STOP = {
     "this", "that", "on", "as", "party", "parties", "agreement", "article", "clause", "which",
     "under", "from", "not", "all", "such", "will", "may", "means", "its", "at", "an", "a",
 }  # fmt: skip
+# Tone marks shared with Latin-1 ("giá", "và") and common unaccented Vietnamese words: evidence
+# for Vietnamese in short pieces that have none of the Vietnamese-only letters in VI_CHARS.
+_LATIN1_TONES = re.compile(r"[àáãèéìíòóõùúý]")
+VI_STOP = {
+    "và", "của", "các", "cho", "được", "theo", "trong", "với", "là", "có", "không", "khi",
+    "này", "thanh", "toán", "giá", "bên", "hợp", "đồng", "điều", "khoản", "tin", "thông",
+}  # fmt: skip
 _WORD = re.compile(r"[^\W\d_]+")
 _SENTENCE = re.compile(r"(?<=[.;!?])\s+")
 _SLASH = re.compile(r"\s+/\s+")
@@ -35,7 +42,9 @@ def text_lang(text: str) -> str | None:
     words = _WORD.findall(text.lower())
     if not words:
         return None
-    vi = sum(1 for w in words if VI_CHARS.search(w)) / len(words)
+    vi = sum(
+        1 for w in words if VI_CHARS.search(w) or w in VI_STOP or _LATIN1_TONES.search(w)
+    ) / len(words)
     if vi >= 0.2:
         return "vi"
     en = sum(1 for w in words if w in EN_STOP) / len(words)

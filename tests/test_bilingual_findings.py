@@ -31,7 +31,11 @@ def test_each_seeded_discrepancy_is_found():
     assert "amount" in kinds("giá 100.000.000 VND", "price VND 150,000,000")
     assert "percent" in kinds("phạt 8% giá trị", "a penalty of 10% of the value")
     assert "date" in kinds("từ ngày 01 tháng 02 năm 2026", "from 2 January 2026")
-    assert "number" in kinds("trong vòng 30 ngày", "within 45 days")
+    assert "duration" in kinds("trong vòng 30 ngày", "within 45 days")
+    assert "duration" in kinds("trong vòng 24 giờ", "within 72 hours")
+    assert "duration" in kinds("05 ngày làm việc", "5 days")
+    assert kinds("trong vòng 05 (năm) ngày làm việc", "within five (5) business days") == set()
+    assert "number" in kinds("lập thành 04 bản", "made in 3 originals")
     assert "negation" in kinds("Bên Nhận không được tiết lộ.", "The Recipient may disclose.")
     assert "tax_code" in kinds("Mã số thuế: 0101234567", "Tax code: 0101234568")
     assert kinds("Bên Nhận phải bảo mật.", "", "confidentiality_obligations") == {
@@ -166,7 +170,7 @@ def test_vietnamese_review_text_and_bilingual_exports(client, make_tenant):
     by_rule = {f["rule_key"]: f for f in findings}
     # Offline (T0) summaries are written in Vietnamese for a Vietnamese deliverable.
     assert by_rule["exclusions_present"]["summary"] == "Không có điều khoản Trường hợp loại trừ."
-    assert by_rule["bilingual:duration"]["summary"].startswith("Thời hạn (tháng) khác nhau")
+    assert by_rule["bilingual:duration"]["summary"].startswith("Thời hạn khác nhau")
     for f in findings:
         r = client.patch(f"/v1/findings/{f['id']}", json={"action": "accept"}, headers=t.headers())
         assert r.status_code == 200, r.text

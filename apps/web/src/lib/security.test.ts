@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildCsp, needsSession } from "./csp";
 import { checkCsrf } from "./csrf";
+import { clientIp } from "./forwarded";
 import { authorizeUrl, base64url, randomToken, s256, safeNext } from "./pkce";
 import { decodeTxn, encodeTxn } from "./server/oidcCookie";
 
@@ -76,5 +77,14 @@ describe("login transaction cookie", () => {
     expect(decodeTxn("not-base64-json")).toBeNull();
     expect(decodeTxn(Buffer.from(JSON.stringify({ state: "s" })).toString("base64url"))).toBeNull();
     expect(decodeTxn(undefined)).toBeNull();
+  });
+});
+
+describe("client address for the sign-in rate limit", () => {
+  it("takes the entry the platform proxy appended, not client-supplied ones", () => {
+    const h = new Headers({ "x-forwarded-for": "1.2.3.4, 203.0.113.9" });
+    expect(clientIp(h)).toBe("203.0.113.9");
+    expect(clientIp(new Headers({ "x-real-ip": "198.51.100.1" }))).toBe("198.51.100.1");
+    expect(clientIp(new Headers())).toBe("unknown");
   });
 });

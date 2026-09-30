@@ -217,6 +217,48 @@ def parse_durations(text: str) -> list[Duration]:
     return out
 
 
+_PERIOD = re.compile(
+    rf"(?:(?P<digits>\d{{1,4}})(?:\s*\([^)]{{1,40}}\))?|(?P<words>{_VI_NUM_PHRASE}|{_EN_NUM_PHRASE})"
+    r"(?:\(\s*(?P<paren>\d{1,4})\s*\)\s*)?)\s*(?P<unit>ngày làm việc|business days?|working "
+    r"days?|hours?|giờ|days?|ngày|weeks?|tuần|hari kerja|hari|jam|minggu)\b",
+    re.IGNORECASE,
+)
+_PERIOD_UNIT = {
+    "ngày làm việc": "bd", "business day": "bd", "working day": "bd", "hari kerja": "bd",
+    "hour": "h", "giờ": "h", "jam": "h", "day": "d", "ngày": "d", "hari": "d",
+    "week": "w", "tuần": "w", "minggu": "w",
+}  # fmt: skip
+
+
+@dataclass(frozen=True)
+class Period:
+    value: int
+    unit: str  # h | d | bd (working days) | w | mo (months; years are converted)
+    span: str
+
+
+def parse_periods(text: str) -> list[Period]:
+    """Every stated period, months-scale and short ("24 giờ", "within 30 days")."""
+    out = [Period(d.months, "mo", d.span) for d in parse_durations(text)]
+    text = _nfc(text)
+    for d in parse_dates(text):  # "ngày 01 tháng 02" is a date
+        text = text.replace(d.span, " " * len(d.span))
+    for m in _PERIOD.finditer(text):
+        if m.group("digits"):
+            n: int | None = int(m.group("digits"))
+        elif m.group("paren"):
+            n = int(m.group("paren"))
+        else:
+            n = words_to_int(m.group("words"))
+        if not n:
+            continue
+        unit = m.group("unit").lower()
+        out.append(
+            Period(n, _PERIOD_UNIT[unit[:-1] if unit.endswith("s") else unit], m.group(0).strip())
+        )
+    return out
+
+
 def durations_months(text: str) -> list[int]:
     return [d.months for d in parse_durations(text)]
 

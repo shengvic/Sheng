@@ -12,6 +12,38 @@ Template:
 
 ---
 
+## 2026-09-30 — Vietnam pilot made release-ready (R1–R7)
+- Done:
+  - **R1 bilingual reading:** DOCX in body order with table cells, `travo_rag/bilingual.py`
+    (four layouts), keyword segmentation (Điều/Article), VN number/amount/date/period parser
+    (`travo_agents/numbers.py`), new clause keys and SALE, migration 0005.
+  - **R2 discrepancy findings:** `bilingual` step and `bilingual_check` task (migration 0006,
+    `findings.evidence`).
+  - **R3 drafts:** VN playbooks `nda_vn`, `commercial_vn`, `services_vn`, `dpa_vn` and
+    `jurisdiction_packs/vn.yaml`, all `[verify]`.
+  - **R4 VN statutes:** `legal_sources/vn.yaml` (15, `url: null`), `parsers_vn.py`, unaccented
+    search (migration 0008), NFC citations, Vietnamese pinpoints.
+  - **R5 routing:** offshore switch, `default_policy_vn.yaml`, endpoint `zdr`/`languages`,
+    output language (migration 0007).
+  - **R6 UI and exports:** Vietnamese UI (`i18n/`), bilingual canvas, VI/EN/both exports,
+    two-column bilingual redline.
+  - **R7 release gate:**
+    - `evals/vn_gold.py` with gates in `make eval` and `tests/test_vn_evals.py`;
+    - sign-in rate limit (`ratelimit.py`, BFF sends `X-Travo-Client-IP`);
+    - VN e2e; deploy smoke includes a bilingual review; `TRAVO_DEFAULT_LOCALE=vi`.
+  - **Fixes the eval found:** longest taxonomy hint wins ties; Latin-1 tone marks count as
+    Vietnamese; hours/days/working days are periods.
+- Decisions: ADR-023.
+- Gates: make check (183 passed), web-check, e2e (7), eval (VN gates 1.000 on the synthetic set),
+  deploy-smoke — all green.
+- Next:
+  - deploy to the VPS (SSH access + domain);
+  - `legal-fetch -j VN` on the VPS (URLs to discover), then ingest and `legal-verify`;
+  - lawyer sign-off of the playbooks and pack;
+  - real-contract gold set; DPA and transfer dossier (docs/14 §6).
+- Open threads: T1 in Vietnamese is untested (no key); synthetic evals may overstate quality;
+  the in-process rate limit assumes one API process.
+
 ## 2026-09-30 — Pilot deployment packaging for the existing Coolify VPS (V6)
 - **Done:**
   - **Deploy files:** `deploy/` — Dockerfile.api (api + worker, non-root, healthcheck, `migrate` on start), Dockerfile.web (Next standalone), docker-compose.coolify.yml (only `web` public), backup.sh, .env.example.

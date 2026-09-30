@@ -15,10 +15,13 @@ frontier models through a **model-agnostic, conflict-aware router**.
   `docs/14-vietnam-launch-plan.md`; SG/MY stay built but follow VN. MVP pilot (ADR-022): Coolify
   on a Contabo VPS, hosted open-weight model APIs, legal texts scraped from official VN sites,
   scope NDA / commercial contracts / services / DPA.
-- **Next step:** V1 (VN corpus: `vn.yaml`, vbpl.vn scraping, Điều/Khoản/Điểm parser, encoding
-  normalisation, unaccented search), V6 (Coolify deploy) and V3 (bilingual alignment +
-  discrepancy checks) in parallel. VN legal domains are blocked in the dev environment's network
-  policy until allowed.
+- **VN pilot release-ready (2026-09-30, docs/14 §13, ADR-023):** bilingual contracts (clause
+  pairs, `bilingual` findings), draft VN playbooks + pack, VN statute parser, unaccented search,
+  offshore switch, output language, Vietnamese UI, sign-in rate limit, VN gold gates.
+- **Next step:** deploy to the Coolify VPS (waits on SSH access + domain), then `legal-fetch -j VN`
+  on the VPS → ingest → lawyer `legal-verify`; lawyer sign-off of the VN playbooks; DPA and
+  transfer dossier before real client documents. VN legal domains are blocked in the dev
+  environment's network policy.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 
@@ -66,9 +69,10 @@ services/rag      travo_rag    parsing, language ID, segmentation, legal_index, 
                                fetch + snapshots, HTML/PDF parsers, review report)
 services/agents   travo_agents taxonomy, classify/extract/compare/lawcheck/redline/memo agents,
                                playbooks + checks, prompts/<task>/v1.md, travo_rules T0 model
-config/           endpoints.yaml, default_policy.yaml, review.yaml, playbooks/*.yaml,
-                  jurisdiction_packs/*.yaml, legal_sources/{sg,my}.yaml (statute manifests)
-evals/            gold/nda (synthetic), harness.py, make_gold.py
+config/           endpoints.yaml, default_policy{,_vn}.yaml, review.yaml, playbooks/*.yaml
+                  (*_vn drafts), jurisdiction_packs/*.yaml, legal_sources/{sg,my,vn}.yaml
+evals/            gold/nda (synthetic), harness.py (+ VN gates), make_gold.py, vn_fixtures.py
+                  (bilingual DOCX builders), vn_gold.py (VN pilot set, 4 contract types)
 tests/            pytest; ephemeral Postgres 16; fixtures/legal_fixture.jsonl (NOT real law)
 scripts/          create_app_role.sql, e2e.sh (Postgres + mock IdP + API + next dev + Playwright),
                   mock_oidc.py (test-only OIDC provider), deploy_smoke.py (compose stack smoke test)
@@ -120,7 +124,11 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
   Real statute files (PDFs/snapshots) never go in git; the parser must never drop body text
   silently — keep its accounting check at zero (ADR-020).
 - Few-shot examples are filtered to matters the initiator is a member of (ADR-015).
-- Web: `apps/web/src/lib/types.ts` mirrors `schemas.py` — change both together. The browser only
+- Bilingual contracts: clauses hold the primary language in `text`, the other in `text_alt`;
+  checks read `text`. VI–EN differences are `kind = bilingual` findings (ADR-023). Output language
+  lives in `review_runs.options`; T0 messages have en/vi variants — add both.
+- Web: `apps/web/src/lib/types.ts` mirrors `schemas.py` — change both together. UI strings live in
+  `src/i18n/{en,vi}.ts` (same `Dict` shape) and are read via `useT()`; no hard-coded labels. The browser only
   calls `/api/*` and `/auth/*` (same origin) and never holds a bearer token: it lives in the
   httpOnly `travo_session` cookie. Writes need the `X-Travo-CSRF: 1` header. Use `localhost`, not
   `127.0.0.1`, for `next dev`. Next 16 calls middleware `proxy.ts`.

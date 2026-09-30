@@ -1,6 +1,6 @@
 # 08 — UX / UI Specification
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-29 · **Related:** [05](05-contract-review-workflow.md), [07](07-hitl-telemetry-data-flywheel.md)
+> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [05](05-contract-review-workflow.md), [07](07-hitl-telemetry-data-flywheel.md)
 
 ## 1. Design principles
 1. **Lawyer-native:** feels like Word + a sharp associate's issues list, not a chatbot. Chat exists but is secondary.
@@ -114,3 +114,19 @@ vi/id/ms dictionaries (strings are centralised in `src/i18n/en.ts`), "Travo is l
   - *Audit log* — filter by action.
   - *Sign-in (SSO)* — issuer, client id, write-only secret, email domains, enable; active
     sessions with revoke (revoking your own signs you out).
+
+## 9. As built — Vietnamese UI and bilingual canvas (2026-09-30)
+- **Locales:**
+  - `apps/web/src/i18n/{en,vi}.ts` share one `Dict` type, so a missing key fails the build.
+  - Components read strings via `useT()`.
+  - The locale comes from the `travo_locale` cookie, else `TRAVO_DEFAULT_LOCALE` (`vi` in the
+    pilot), else English. `<html lang>` follows it.
+  - The VI/EN switch is in the shell and on the sign-in page.
+- **Matter page:** a bilingual-layout chip on each document, and an output-language choice when
+  starting a review.
+- **Review canvas:**
+  - Bilingual clauses show as VI | EN columns.
+  - Discrepancy findings show both versions' spans side by side, plus a prevailing-language
+    badge, and have their own filter ("Bản Việt / Anh").
+  - With output `both`, the alternate-language redline is shown under the main one.
+- **Sign-in errors** now include `rate_limited` (HTTP 429 from the API).

@@ -18,6 +18,7 @@ from travo_api.auth import Actor, get_actor
 from travo_api.db import get_engine, tenant_session
 from travo_api.keys import decrypt_idp_secret
 from travo_api.models import Tenant, TenantIdp, User
+from travo_api.ratelimit import auth_rate_limit
 from travo_api.schemas import MeOut, OidcCallbackIn, OidcStartIn, OidcStartOut, SessionOut
 from travo_api.sessions import create_session, revoke
 
@@ -31,7 +32,7 @@ def _lookup(sql: str, **params: object) -> tuple[uuid.UUID, str, str, str] | Non
     return (row[0], str(row[1]), row[2], row[3]) if row else None
 
 
-@router.post("/oidc/start", response_model=OidcStartOut)
+@router.post("/oidc/start", response_model=OidcStartOut, dependencies=[Depends(auth_rate_limit)])
 def oidc_start(body: OidcStartIn) -> OidcStartOut:
     domain = body.email.rsplit("@", 1)[1].lower()
     idp = _lookup("SELECT * FROM idp_for_email_domain(:d)", d=domain)
@@ -47,7 +48,7 @@ def oidc_start(body: OidcStartIn) -> OidcStartOut:
     )
 
 
-@router.post("/oidc/callback", response_model=SessionOut)
+@router.post("/oidc/callback", response_model=SessionOut, dependencies=[Depends(auth_rate_limit)])
 def oidc_callback(body: OidcCallbackIn, request: Request) -> SessionOut:
     idp = _lookup("SELECT * FROM idp_by_id(:i)", i=body.idp_id)
     if idp is None:

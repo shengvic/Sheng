@@ -41,3 +41,11 @@
 | **Supplied snapshot** | An official file obtained by hand and stored with `legal-import` (`origin: supplied`); same review and verification path as a fetched one. |
 | **Contents-driven parsing** | Using an Act's "Arrangement of Sections" to decide which numbered lines start sections and which lines are headings or Part titles. |
 | **Editorial note** | A reprint footnote (`*NOTE—…`); shown in the review report, never ingested as law. |
+| **Bilingual layout** | How a VI–EN contract pairs its versions: `table` (VI \| EN columns), `inline`, `paragraphs` (alternating) or `halves` (all VI, then all EN). Stored on `documents.bilingual_layout`. |
+| **Clause pair** | A clause's primary-language text (`text`) with its other-language version (`text_alt`). |
+| **Discrepancy finding** | A `kind = bilingual` finding: the two language versions of a clause differ (amounts, figures vs words, periods, dates, negation, meaning…). |
+| **Prevailing language** | The version a contract says governs if the two differ ("bản tiếng Việt được ưu tiên áp dụng"). |
+| **Figures vs words** | A check that an amount in digits matches the same amount written in words ("100.000.000 đồng (Bằng chữ: Một trăm triệu đồng)"). |
+| **Điều / khoản / điểm** | Vietnamese article / numbered clause (1., 2.) / lettered point (a), b)); the unit hierarchy of VN legislation and contracts. |
+| **Output language** | The language of a review's findings, redlines and memo (`vi`, `en` or `both`), separate from the UI locale. |
+| **Offshore switch** | `data_location.allow_offshore_processing` in the model policy; off until the DPA and cross-border transfer dossier exist. |
