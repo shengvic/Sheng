@@ -12,6 +12,21 @@ Template:
 
 ---
 
+## 2026-09-30 — Vietnam pilot decisions (economical MVP)
+- **Done:**
+  - Recorded the founder's decisions: Coolify on a Contabo VPS; legal materials scraped from official VN sites; launch scope NDA / commercial contracts / services / DPA.
+  - Revised docs/14 to v2: §6 pilot data-protection safeguards, §12 topology, sizing and cost, V6 now the pilot deployment, V2 CPU embeddings, V5 hosted APIs. Updated docs/13 (VN1, VN3, VN4, VN5 decided).
+  - Checked reachability: vbpl.vn and the other .gov.vn legal sites are blocked by this dev environment's network policy (proxy 403).
+- **Decisions:** ADR-022 (supersedes ADR-021's VN-cell default).
+- **Next:**
+  1. Allow the VN legal domains in the environment network settings, or run the scraper on the VPS.
+  2. V1: `vn.yaml` + `vbpl_html`/DOCX fetch + `parsers_vn.py` against real pages.
+  3. V6: Dockerfiles + Coolify compose + deploy runbook.
+  4. V3: bilingual alignment + discrepancy checks.
+- **Open threads:**
+  - Contabo has no VN region `[verify]`; the transfer dossier and DPA are needed before real client data.
+  - VN2 (entity) is due before paid conversion.
+
 ## 2026-09-30 — Vietnam-first launch plan
 - **Done:**
   - The founder decided to launch in Vietnam first (Q1 → ADR-021).

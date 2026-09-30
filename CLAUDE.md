@@ -12,10 +12,13 @@ frontier models through a **model-agnostic, conflict-aware router**.
   console), 4 (official-statute pipeline + lawyer verification) and 5 (parser hardened on real
   AGC reprints; MY Contracts Act + PDPA parsed, unverified) done. P0 infra still open.
 - **Launch market: Vietnam first (ADR-021).** Plan and workstreams V0–V9 in
-  `docs/14-vietnam-launch-plan.md`; SG/MY stay built but follow VN.
-- **Next step:** founder decisions VN1–VN8 (`docs/13`), then V1 (VN corpus: `vn.yaml`,
-  Điều/Khoản/Điểm parser, encoding normalisation, unaccented search) and V3 (bilingual
-  alignment + discrepancy checks) in parallel.
+  `docs/14-vietnam-launch-plan.md`; SG/MY stay built but follow VN. MVP pilot (ADR-022): Coolify
+  on a Contabo VPS, hosted open-weight model APIs, legal texts scraped from official VN sites,
+  scope NDA / commercial contracts / services / DPA.
+- **Next step:** V1 (VN corpus: `vn.yaml`, vbpl.vn scraping, Điều/Khoản/Điểm parser, encoding
+  normalisation, unaccented search), V6 (Coolify deploy) and V3 (bilingual alignment +
+  discrepancy checks) in parallel. VN legal domains are blocked in the dev environment's network
+  policy until allowed.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
 

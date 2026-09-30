@@ -21,12 +21,12 @@
 ## Vietnam launch (added 2026-09-30, see [14](14-vietnam-launch-plan.md) §10)
 | # | Question | Default assumption | Impacts |
 |---|---|---|---|
-| VN1 | VN hosting provider for the VN cell (GPU availability, certifications, price) | Shortlist Viettel IDC / FPT Smart Cloud / VNG Cloud `[verify]`; decide by week 2 | 02, 06, 14 |
+| ~~VN1~~ | Hosting — **Decided 2026-09-30: Coolify on a Contabo VPS for the MVP pilot** (ADR-022); VN hosting only when customers require it | — | 02, 06, 14 |
 | VN2 | Entity: VN subsidiary or offshore SaaS (localisation, tax, VND invoicing)? | Legal opinion; assume VN entity for the pilot | 06, 14 |
-| VN3 | Re-use terms for vbpl.vn / Công báo; licence for English translations | Official Vietnamese text only at launch | 04, 14 |
-| VN4 | T1 model for Vietnamese and where it runs | Evaluate 3 candidates; host in VN | 03, 10, 14 |
-| VN5 | Launch contract types | NDA, commercial services/supply, DPA | 05, 14 |
+| ~~VN3~~ | Legal materials — **Decided: scrape official government sites only** (vbpl.vn, Công báo, chinhphu.vn, anle); no commercial databases | — | 04, 14 |
+| ~~VN4~~ | T1 model — **Decided: hosted pay-per-token open-weight APIs for the pilot**; pick by Vietnamese eval | — | 03, 10, 14 |
+| ~~VN5~~ | Launch contract types — **Decided: NDA, commercial contracts (sale/supply), services, DPA** | — | 05, 14 |
 | VN6 | Default UI and memo language | UI Vietnamese; memo language per matter | 08, 14 |
 | VN7 | Design partners and VN legal engineer | 2–3 firms HCMC/Hanoi; legal engineer by week 2 | 12, 14 |
-| VN8 | Offshore processing for pilots (frontier escalation, SG interim hosting) | Off by default; per-firm opt-in with transfer dossier | 03, 06, 14 |
+| VN8 | Offshore processing in the pilot (VPS outside VN + model APIs) | Per-firm switch, on only after DPA + transfer dossier | 03, 06, 14 |
 

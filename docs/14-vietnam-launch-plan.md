@@ -1,6 +1,6 @@
 # 14 — Vietnam-First Launch Plan
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** ADR-021, [01](01-product-vision-and-prd.md), [04](04-legal-rag-and-citation-validation.md), [05](05-contract-review-workflow.md), [06](06-security-compliance-ethical-walls.md), [08](08-ux-ui-spec.md), [11](11-evaluation-and-quality.md), [12](12-roadmap.md), [13](13-open-questions.md)
+> **Status:** Draft v2 (MVP pilot decisions, ADR-022) · **Last updated:** 2026-09-30 · **Related:** ADR-021, ADR-022, [01](01-product-vision-and-prd.md), [04](04-legal-rag-and-citation-validation.md), [05](05-contract-review-workflow.md), [06](06-security-compliance-ethical-walls.md), [08](08-ux-ui-spec.md), [11](11-evaluation-and-quality.md), [12](12-roadmap.md), [13](13-open-questions.md)
 >
 > **Legal references in this document are from memory as of 2026-09-30. Every instrument number,
 > article and date is `[verify]` until a Vietnamese-qualified lawyer confirms it against the
@@ -18,19 +18,23 @@ Malaysia stay built and supported, but they move behind Vietnam. What changes:
 | Law sources | SSO HTML, AGC PDFs | vbpl.vn (national legal database), Công báo (official gazette), consolidated texts (văn bản hợp nhất), án lệ |
 | Retrieval | English full text | Vietnamese full text with and without diacritics, plus **cross-lingual** search (English clause → Vietnamese law). Dense retrieval becomes a launch requirement. |
 | Data law | PDPA SG/MY | PDP Law 2025 + Decree 13/2023 (cross-border transfer dossiers), Cybersecurity Law 2018 + Decree 53/2022 (localisation), Law on Data 2024 `[verify]` |
-| Hosting | SG cell | **VN residency by default** for client documents; offshore processing only as an explicit firm opt-in (§6) |
+| Hosting | SG cell (AWS) | **MVP pilot: one Contabo VPS run with Coolify** (ADR-022). Contabo has no Vietnam region `[verify]`, so data leaves Vietnam and the pilot needs the §6 safeguards. VN hosting is an upgrade path, not a pilot requirement. |
 | UI | English | **Vietnamese UI**, English as an option; memos in VI or EN |
-| Models | English quality | Vietnamese and bilingual quality decide the T1 choice |
+| Models | English quality | Vietnamese and bilingual quality decide the T1 choice. **Pilot: pay-per-token hosted open-weight APIs** (no GPUs on the VPS). |
 
 ## 2. Launch scope (Vietnam MVP)
 **Users:** Vietnamese law firms in HCMC and Hanoi that do foreign-investment and commercial work,
 and the Vietnam offices of regional firms. Personas as in [01](01-product-vision-and-prd.md): associate,
 partner, KM/legal-ops, IT/admin.
 
-**Contract types (default, confirm with design partners — VN5):**
-1. NDA / confidentiality agreement (bilingual and VI-only)
-2. Commercial services / supply agreement (hợp đồng dịch vụ / mua bán hàng hóa)
-3. Data processing agreement under the PDP Law (hợp đồng xử lý dữ liệu cá nhân)
+**Contract types (decided 2026-09-30, VN5):**
+1. NDA / confidentiality agreement (thỏa thuận bảo mật)
+2. Commercial contracts — sale and supply of goods (hợp đồng mua bán hàng hóa) and general
+   commercial terms
+3. Services agreements (hợp đồng dịch vụ)
+4. Data processing agreements under the PDP Law (hợp đồng xử lý dữ liệu cá nhân)
+
+Each comes bilingual (VI–EN) or Vietnamese only.
 
 Later: distribution/agency, labour contracts and NDAs with employees (Bộ luật Lao động),
 leases, M&A/SPA.
@@ -41,7 +45,7 @@ leases, M&A/SPA.
 - Vietnamese law checks grounded in verified Vietnamese sources, with per-claim citations in
   Vietnamese citation style (`Khoản 1 Điều 301 Luật Thương mại 2005`).
 - Vietnamese playbooks, a Vietnamese UI, and memos and redlines in VI, EN or both.
-- Client documents stored and processed in Vietnam by default.
+- An economical pilot deployment (§12), with the data-protection safeguards in §6.
 
 **Exit criteria for the VN pilot:**
 - 2–3 VN design-partner firms using Travo on real non-critical matters.
@@ -59,7 +63,20 @@ leases, M&A/SPA.
 | Công báo (congbao.chinhphu.vn) | Gazette copy used to confirm text and dates | Often scanned PDFs: OCR only as a fallback |
 | Văn bản hợp nhất (consolidated texts from the issuing body) | Preferred text when an instrument has been amended | Footnotes mark amended provisions; treat them as notes (as with `*NOTE`, ADR-020) |
 | anle.toaan.gov.vn — official precedents | Secondary source (phase 2) | Cite as `Án lệ số NN/YYYY/AL` |
-| Commercial databases (Thư Viện Pháp Luật, LuatVietnam) | English translations and annotations | Only under licence (Q2). Translations are always labelled "unofficial translation". |
+| Commercial databases (Thư Viện Pháp Luật, LuatVietnam) | English translations and annotations | **Not scraped** (their terms restrict copying). Only under licence (Q2). Translations are always labelled "unofficial translation". |
+
+**Scraping policy (decided 2026-09-30, ADR-022):**
+- Materials are scraped from **official government sites only**: vbpl.vn, Công báo,
+  chinhphu.vn, anle.toaan.gov.vn.
+- Vietnamese legal normative documents are excluded from copyright protection (Luật Sở hữu
+  trí tuệ, Điều 15) `[verify]`.
+- The existing `PoliteFetcher` rules still apply: robots.txt, ≥ 2 s between requests,
+  identified User-Agent, size cap, and immutable snapshots with sha256.
+- Where it runs: a scheduled Coolify job on the pilot VPS (`legal-fetch -j VN`), or a dev
+  environment whose network policy allows those domains.
+- vbpl.vn pages can need two steps (the full-text page, then the attached DOC/PDF). The
+  manifest stores the document page URL, and the fetcher follows only same-site links that the
+  manifest allows.
 
 ### 3.2 Launch instruments `[verify all]`
 Contract review needs these first; manifest `config/legal_sources/vn.yaml`:
@@ -164,6 +181,14 @@ Contract review needs these first; manifest `config/legal_sources/vn.yaml`:
   - Citations always in the original Vietnamese, with an optional unofficial English gloss.
 
 ## 5. Models and routing
+- **Pilot hosting of models (ADR-022):**
+  - No GPU on the VPS. T1 open-weight models run through **pay-per-token OpenAI-compatible
+    APIs** (e.g. OpenRouter, DeepInfra, Fireworks, Together `[verify]`), using the existing
+    router adapter (ADR-009).
+  - Prefer providers with no-retention / no-training terms, recorded on the endpoint (`zdr`).
+  - Embeddings run on the VPS CPU with a small multilingual model (multilingual-e5 base class
+    `[verify]`). The corpus is embedded once in batch; queries are embedded one at a time.
+  - Pilot supports text-layer PDFs and DOCX only; OCR comes after the pilot.
 - **T1 choice (Q5):** evaluate at least 3 open-weight candidates on Vietnamese and bilingual
   tasks before choosing: classification, extraction, playbook compare, discrepancy detection,
   and law-check answers in Vietnamese. Candidates are strong multilingual families (for example
@@ -175,29 +200,46 @@ Contract review needs these first; manifest `config/legal_sources/vn.yaml`:
   - Residency (§6) is enforced as a hard filter, like conflicts.
 - **Prompts:** add `prompts/<task>/v1.vi.md` wherever the model must write Vietnamese. Keep one
   English system prompt for reasoning if evals show it works better.
-- **Escalation to T2:** frontier models run offshore, so escalation of VN matters is **off by
-  default**. It is allowed per firm only with the opt-in in §6. Without it, a low-confidence
+- **Escalation to T2:** allowed in the pilot for firms that accept the §6 terms. It stays
+  switchable per firm and per matter (existing conflict rules). Without it, a low-confidence
   finding goes to `needs_human`, the existing ADR-012 behaviour.
 
-## 6. Data residency, hosting and compliance
-**Default posture (ADR-021):**
-- Client documents, derived text, embeddings, findings and logs of VN tenants are stored and
-  processed in a **VN cell**.
-- T1 inference runs in Vietnam.
-- Anything that leaves Vietnam goes through the router under a firm-level switch
-  `allow_offshore_processing`. That switch requires the firm's confirmation that consent and
-  the cross-border transfer dossier are in place.
-- Every offshore call is logged in `routing_decisions`.
+## 6. Data protection, hosting and compliance (pilot posture, ADR-022)
+**Where data goes in the pilot:**
+- Documents, extracted text, embeddings, findings and logs are on one Contabo VPS, preferably in
+  the Singapore location (closest to Vietnam) `[verify]`.
+- Model calls go to hosted APIs, which may be in the US or EU.
+- This is a **cross-border transfer of personal data** under Vietnam's PDP rules: contracts name
+  signatories and contain ID numbers and contact details.
 
-| Topic | Plan | Owner |
+**Safeguards before the first real client document:**
+1. **Pilot agreement + DPA (VI/EN)** with each firm. Travo acts as processor. The DPA states the
+   hosting location, the model providers and retention.
+2. **Cross-border transfer impact assessment dossier:** prepared with counsel. Who files it, the
+   firm or Travo, is `[verify]`.
+3. **Firm-level switch `allow_offshore_processing`** (router hard filter). It is off until
+   items 1–2 are signed. With it off, reviews run only on the T0 rules and a lawyer.
+4. **Pilot on low-sensitivity or anonymised matters first.** Firms are asked to redact personal
+   identifiers where practical.
+5. **Security on a single VPS:**
+   - Firewall: only 80/443 and key-only SSH.
+   - Postgres is not exposed. The Coolify dashboard is behind an IP allowlist and 2FA.
+   - Unattended security updates.
+   - `TRAVO_MASTER_KEY` held as a Coolify secret. Documents and BYO keys are already
+     envelope-encrypted.
+   - Nightly encrypted Postgres + object backups to off-site S3-compatible storage.
+   - `TRAVO_ALLOW_DEV_TOKENS=false` and `TRAVO_REQUIRE_VERIFIED_SOURCES=true`.
+6. **Model providers:** no-training terms, and zero-retention where available. Each call is
+   logged in `routing_decisions` (provider, host, region).
+
+| Topic | Pilot plan | Later |
 |---|---|---|
-| VN cell | Same stack as the SG cell (Terraform) on a VN cloud with GPUs: Viettel IDC, FPT Smart Cloud, VNG Cloud or CMC `[verify]` (Q4/VN1) | Eng |
-| Interim | Until the VN cell exists, pilot data stays in the SG cell only with the firm's written acceptance and a cross-border transfer dossier. Otherwise the pilot waits. | Founder + counsel |
-| PDP Law | Travo acts as the firm's **processor**: a DPA template, the processing impact assessment dossier, cross-border transfer dossiers where relevant, breach notification runbook, DPO contact `[verify requirements]` | Compliance |
-| Cybersecurity Law / Decree 53 | Legal opinion on whether localisation applies to Travo (depends on entity and service type, VN2) | Counsel |
-| Law on Lawyers / professional rules | Travo supports lawyers and does not give legal advice. Every finding is dispositioned by a lawyer, and client confidentiality is covered in the DPA. | Product + counsel |
-| Entity and tax (Q9/VN2) | VN subsidiary vs offshore SaaS affects localisation, foreign contractor tax, VND invoicing and trust | Founder |
-| AI rules | Track Vietnam's AI and digital-technology legislation (2025–2026) `[verify]` | Compliance |
+| Hosting | Coolify on one Contabo VPS (§12) | Move the same containers to a VN provider or a second VPS when customers require residency or scale (VN1) |
+| PDP Law | DPA, transfer dossier, breach runbook, privacy notice | DPO and processing impact dossiers as volume grows `[verify requirements]` |
+| Cybersecurity Law / Decree 53 | Legal opinion before paid launch (depends on entity, VN2) | VN hosting if localisation applies |
+| Law on Lawyers | Travo supports lawyers and gives no legal advice. Every finding is dispositioned by a lawyer. | — |
+| Entity and tax (VN2) | Pilot is free, so it has no invoicing | Decide before paid conversion |
+| AI rules | Track Vietnam's AI and digital-technology legislation (2025–2026) `[verify]` | — |
 
 ## 7. UX (Vietnamese)
 - `src/i18n/vi.ts` with full coverage. Vietnamese is the default locale for VN tenants, and each
@@ -225,18 +267,18 @@ Contract review needs these first; manifest `config/legal_sources/vn.yaml`:
 The existing synthetic `vn_bilingual_nda` stays a smoke test only.
 
 ## 9. Workstreams and sequence (indicative, from kickoff)
-Parallel where possible; about 12–14 weeks to pilot with a team as in [12](12-roadmap.md) plus a
-VN legal engineer.
+Parallel where possible; about 10–12 weeks to pilot with a team as in [12](12-roadmap.md) plus a
+VN legal engineer. The Coolify pilot removes the VN-cell infrastructure from the critical path.
 
 | # | Workstream | Weeks | Depends on | Main code |
 |---|---|---|---|---|
 | V0 | Decisions and inputs: VN1–VN7 (§10), VN legal engineer, 2–3 design partners, T1 shortlist | 0–2 | Founder | — |
 | V1 | VN legal corpus: `vn.yaml`, encoding normalisation, `parsers_vn.py`, vbpl HTML/DOCX, validity relationships, `unaccent` + syllable search, 15 instruments imported and verified | 1–6 | Official texts (VN3), lawyer | `travo_rag/sources/*`, migration 0005, `retrieval.py`, `citations.py` |
-| V2 | Dense cross-lingual retrieval: pgvector, multilingual embeddings as T0 (in VN), RRF fusion | 2–6 | Embedding host in VN | `retrieval.py` (DenseRetriever hook), migration |
+| V2 | Dense cross-lingual retrieval: pgvector, CPU multilingual embeddings on the VPS, RRF fusion | 2–6 | — | `retrieval.py` (DenseRetriever hook), migration |
 | V3 | Bilingual contracts: DOCX table parsing, Khoản/Điểm segmentation, alignment, T0 discrepancy checks (including the figures-vs-words parser), semantic discrepancy task, prevailing language, `bilingual_discrepancy` findings | 2–8 | T1 endpoint for the semantic part | `parsing.py`, `segmentation.py`, new `travo_agents/bilingual.py`, `checks.py`, `reviews.py` |
-| V4 | VN jurisdiction pack and playbooks: `jurisdiction_packs/vn.yaml`, `playbooks/{nda_vn,services_vn,dpa_vn}.yaml`, VN machine checks (§4), Vietnamese prompts, lawyer sign-off | 3–8 | V1, VN legal engineer | `config/*`, `travo_agents/checks.py`, `prompts/` |
-| V5 | Models and routing: T1 evaluation in Vietnamese, endpoint `languages`/`region`, residency hard filter, `allow_offshore_processing`, VN-default escalation off | 2–7 | Q5, VN1 | `travo_router/*`, `config/endpoints.yaml`, `default_policy.yaml` |
-| V6 | VN cell: Terraform for a VN cloud, KMS, backups, GPU inference (vLLM), OCR in-region; SG interim path | 4–10 | VN1 provider contract | `infra/` (new) |
+| V4 | VN jurisdiction pack and playbooks: `jurisdiction_packs/vn.yaml`, `playbooks/{nda_vn,commercial_vn,services_vn,dpa_vn}.yaml`, VN machine checks (§4), Vietnamese prompts, lawyer sign-off | 3–8 | V1, VN legal engineer | `config/*`, `travo_agents/checks.py`, `prompts/` |
+| V5 | Models and routing: T1 evaluation in Vietnamese on hosted APIs, endpoint `languages`/`region`/`zdr`, `allow_offshore_processing` hard filter | 2–6 | Q5, API keys | `travo_router/*`, `config/endpoints.yaml`, `default_policy.yaml` |
+| V6 | Pilot deployment: Dockerfiles (api, worker, web), Coolify compose, secrets, backups, hardening, `legal-fetch` scheduled job, runbook (§12) | 1–3 | VPS + domain | `deploy/` (new), `docs/runbooks/deploy-coolify.md` |
 | V7 | Vietnamese UX: `vi.ts`, locale formats, bilingual canvas, VI/EN memos, bilingual redline DOCX | 4–10 | V3 | `apps/web/src/*`, `exports.py` |
 | V8 | Compliance: DPA (VI/EN), impact assessment dossiers, breach runbook, legal opinions (Decree 53, Law on Lawyers), privacy notice | 0–10 | Counsel | `docs/06`, legal |
 | V9 | Evals and pilot readiness: VN gold sets (§8), gates in CI, SCIM/rate limits/pen test (from P1), onboarding | 6–14 | V1–V7 | `evals/`, CI |
@@ -247,14 +289,14 @@ features until the VN pilot starts.
 ## 10. Decisions needed (added to [13](13-open-questions.md))
 | # | Question | Default in this plan |
 |---|---|---|
-| VN1 | VN hosting provider for the VN cell (GPU availability, certifications, price) | Shortlist Viettel IDC / FPT Smart Cloud / VNG Cloud; decide by week 2 |
-| VN2 | Entity: VN subsidiary or offshore SaaS? (localisation, tax, invoicing in VND) | Obtain a legal opinion; assume a VN entity for the pilot |
-| VN3 | Terms of re-use for vbpl.vn / Công báo text; licence for English translations (Thư Viện Pháp Luật / LuatVietnam) | Official Vietnamese text only; no English translations at launch |
-| VN4 | T1 model for Vietnamese, and where it runs (VN GPUs vs SG) | Evaluate 3; host in VN |
-| VN5 | Launch contract types | NDA, commercial services/supply, DPA |
+| VN1 | Hosting | **Decided: Coolify on a Contabo VPS for the MVP pilot** (ADR-022). VN hosting only when customers require it. |
+| VN2 | Entity: VN subsidiary or offshore SaaS? (localisation, tax, invoicing in VND) | Pilot is free; decide before paid conversion, with a legal opinion |
+| VN3 | Legal materials | **Decided: scrape official government sites** (§3.1). No commercial databases. |
+| VN4 | T1 model for Vietnamese | **Decided: hosted pay-per-token APIs for the pilot.** Choose among 3 candidates by eval. |
+| VN5 | Launch contract types | **Decided: NDA, commercial contracts (sale/supply of goods), services, DPA** |
 | VN6 | Default UI and memo language | UI in Vietnamese; memo language chosen per matter |
 | VN7 | Design-partner firms and the VN legal engineer (hire or contract) | 2–3 firms in HCMC/Hanoi; legal engineer by week 2 |
-| VN8 | Offshore processing policy for pilots (frontier escalation, SG interim hosting) | Off by default; per-firm opt-in with a transfer dossier |
+| VN8 | Offshore processing | Per-firm switch; on only after DPA + transfer dossier (§6) |
 
 ## 11. Risks
 | Risk | Mitigation |
@@ -262,6 +304,42 @@ features until the VN pilot starts.
 | Vietnamese law changes often; stale text | Consolidated texts first; validity relationships; monthly refresh; stale warnings; lawyer re-verification (ADR-019) |
 | Poor legacy encodings / scanned gazettes | Encoding detection and refusal; vbpl HTML/DOCX first; OCR fallback plus lawyer check |
 | Open-weight model weak in Vietnamese legal language | Evaluate before committing; Vietnamese few-shot from firm edits (ADR-015); escalation allowed only with opt-in |
-| Residency rules block the SG cell | VN cell in the critical path from week 4; interim only with a signed dossier |
+| Offshore pilot hosting challenged by a firm or regulator | §6 safeguards; containers portable to VN hosting; start with low-sensitivity matters |
+| Single VPS fails or is compromised | Nightly off-site encrypted backups with a tested restore; hardening checklist; restore drill before the first client document |
 | No English authoritative law; lawyers want English | Show Vietnamese source + labelled unofficial gloss; memo in EN with Vietnamese citations |
 | Local competitors / legal databases add AI | Bilingual discrepancy + verified citations + VN hosting as the wedge; partner with databases rather than compete |
+
+## 12. Pilot deployment and cost (Coolify on Contabo, ADR-022)
+**Topology (one VPS; Coolify manages the containers and TLS via its proxy):**
+- `postgres`: `pgvector/pgvector:pg16`, private network only, with a volume.
+- `api`: FastAPI/uvicorn. Runs migrations at deploy as the owner role, then serves as `travo_api`.
+- `worker`: `travo worker`, the durable review runner.
+- `web`: Next.js, standalone build.
+- Scheduled jobs:
+  - `legal-fetch -j VN` weekly, then report; a human ingests and verifies.
+  - Nightly encrypted backups (Postgres dump + object store) to S3-compatible off-site storage.
+- Storage: the object store stays on the local filesystem (`TRAVO_STORAGE_DIR` on a volume),
+  envelope-encrypted as today.
+
+**Sizing (start):** one VPS with about 6–8 vCPU, 16–24 GB RAM and NVMe. That is enough for
+Postgres, API, worker, web, and CPU embeddings for a pilot of 2–3 firms. Scale vertically first.
+
+**Monthly cost (estimates, 2026-09-30, `[verify]` prices):**
+
+| Item | Estimate |
+|---|---|
+| Contabo VPS (Singapore) | ≈ €15–30 |
+| Off-site backup storage | ≈ €3–5 |
+| Domain + email | ≈ €2 |
+| Model APIs (T1 open-weight, pay-per-token) | Usage-based. A bilingual 10–15 page contract is about 100–200k tokens across all steps, so roughly US$0.02–0.20 per review at open-weight prices. T2 escalations cost more. |
+| Coolify | Self-hosted, free |
+
+**Deployment work (V6):**
+- `deploy/Dockerfile.api` (also used by the worker) and `deploy/Dockerfile.web`.
+- `deploy/docker-compose.coolify.yml`.
+- Healthchecks: `/healthz` for the API, `/` for the web.
+- An `.env` template listing required secrets. The app refuses to start if
+  `TRAVO_ALLOW_DEV_TOKENS=true` without a dev flag.
+- `docs/runbooks/deploy-coolify.md`: first install, hardening, backups and restore drill,
+  upgrades, rollback.
+

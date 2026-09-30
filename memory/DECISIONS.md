@@ -153,3 +153,18 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
   - New work: VN corpus parser (Điều/Khoản/Điểm, legacy encodings), a VN cell (infra), a Vietnamese UI, VN playbooks with a VN legal engineer, and T1 selection on Vietnamese.
   - The pilot depends on VN1–VN8 (docs/13).
   - All VN legal references in the plan are `[verify]` until a VN lawyer confirms them.
+
+## ADR-022 — Economical MVP pilot: Coolify on Contabo, scraped official texts, hosted model APIs (supersedes ADR-021's VN-cell default)
+- **Date:** 2026-09-30 · **Status:** Accepted
+- **Context:** For the MVP phase the founder chose the cheapest workable pilot. That means hosting with Coolify on a Contabo VPS, legal materials scraped from public Vietnamese sites, and a launch scope of NDA, commercial contracts, services and DPA.
+- **Decision:**
+  - **Hosting:** one Contabo VPS (Singapore location preferred) running Coolify, with Postgres/pgvector, API, worker and web as containers. Nightly encrypted off-site backups.
+  - **Models:** open-weight models through pay-per-token OpenAI-compatible APIs, with no GPU on the VPS. Multilingual embeddings run on the VPS CPU. No OCR in the pilot.
+  - **Residency:** ADR-021's "VN cell by default" is replaced for the pilot by a per-firm `allow_offshore_processing` switch. It is on only after a DPA and a cross-border transfer dossier are in place. Pilot starts with low-sensitivity or anonymised matters.
+  - **Legal materials:** scraped from official government sites only, with the polite fetcher and snapshots (ADR-019). Commercial databases are not scraped. The lawyer verification gate is unchanged.
+  - **Launch scope:** NDA, commercial contracts (sale/supply of goods), services and DPA.
+- **Consequences:**
+  - Pilot infrastructure costs tens of euros a month instead of a cloud cell.
+  - Data leaves Vietnam (Contabo has no VN region `[verify]`), so the §6 safeguards in docs/14 are mandatory before real client documents.
+  - A single VPS is a single point of failure: backups plus a restore drill are required.
+  - Containers stay portable to VN hosting later.
