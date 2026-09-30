@@ -63,6 +63,7 @@ export const t = {
     fixture: "Test fixture — not real law. Do not rely on this text.",
     unverified:
       "Official text, not yet checked by a lawyer at Travo against the source. Confirm before relying on it.",
+    sourceBy: "Source text published by",
     override: "Override check",
     overrideReason: "Why is this citation acceptable? (min 10 characters)",
     shortcuts: "Keyboard shortcuts",

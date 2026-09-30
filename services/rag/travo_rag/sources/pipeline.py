@@ -23,20 +23,27 @@ def run(
     for inst in manifest.instruments:
         if only and inst.id not in only:
             continue
-        out = InstrumentOutcome(id=inst.id, title=inst.title, status="skipped", url=inst.url)
+        out = InstrumentOutcome(
+            id=inst.id,
+            title=inst.title,
+            status="skipped",
+            url=inst.url,
+            manifest_note=inst.notes or "",
+        )
         outcomes.append(out)
         try:
-            if fetcher is not None:
-                if not inst.url:
-                    out.status, out.detail = "needs_url", "no official URL in the manifest"
-                    continue
+            if fetcher is not None and inst.url:
                 content, ctype = fetcher.get(inst.url)
                 snap = store.save(inst, inst.url, content, ctype)
             else:
+                # Offline, or no URL: use the latest stored snapshot (fetched or supplied).
                 latest = store.latest(inst)
                 if latest is None:
-                    out.status = "needs_url" if not inst.url else "skipped"
-                    out.detail = "no snapshot yet (run without --offline on a machine with access)"
+                    if not inst.url:
+                        out.status = "needs_url"
+                        out.detail = "no official URL and no supplied file (`legal-import`)"
+                    else:
+                        out.detail = "no snapshot yet (fetch where the portal is reachable)"
                     continue
                 snap = latest
             result = parse_snapshot(inst, snap, manifest.issuing_body)
@@ -47,7 +54,9 @@ def run(
             out.status, out.detail = "parse_failed", str(exc)
             continue
         out.status, out.url, out.sha256 = "parsed", snap.url, snap.sha256
+        out.origin, out.filename = snap.origin, snap.filename
         out.units, out.warnings = result.units, result.warnings
+        out.notes, out.parts, out.stats = result.notes, result.parts, result.stats
     return outcomes
 
 

@@ -9,10 +9,10 @@ frontier models through a **model-agnostic, conflict-aware router**.
 
 ## Current phase
 - **Phase:** P1 — slices 1 (review engine), 2 (review canvas), 3 (SSO sign-in + admin
-  console) and 4 (official-statute pipeline + lawyer verification) done. P0 infra items
-  (cloud, observability) still open.
-- **Next step:** run `legal-fetch` where the SSO/AGC portals are reachable and fix parsers
-  against the real layouts (`docs/runbooks/legal-ingestion.md`); real T1 endpoint + evals;
+  console), 4 (official-statute pipeline + lawyer verification) and 5 (parser hardened on real
+  AGC reprints; MY Contracts Act + PDPA parsed, unverified) done. P0 infra still open.
+- **Next step:** current MY reprints + official URLs and the other 4 MY Acts, then lawyer
+  `legal-verify`; SG via `legal-fetch` where SSO is reachable; real T1 endpoint + evals;
   pre-pilot hardening (SCIM, domain verification, rate limits). See `docs/12-roadmap.md`.
 - Before starting work, read `memory/SESSION_LOG.md` (latest entry) and
   `memory/DECISIONS.md`.
@@ -81,7 +81,9 @@ make db-up db-migrate dev   # local API on :8000 (needs Docker + .env from .env.
 make worker       # process queued review runs (or TRAVO_INLINE_REVIEWS=true for dev)
 make ingest-legal FILE=units.jsonl   # load legal units into the shared index (owner conn)
 make legal-fetch JUR=SG [OFFLINE=1]  # fetch + parse statutes → out/legal/SG.jsonl + review report
+make legal-import FILE=act.pdf ID=MY/ACT136 [URL=https://…]  # store a hand-downloaded file
 make legal-verify SOURCE=SG/UCTA1977 BY=lawyer@firm.sg   # record a lawyer's check
+TRAVO_REAL_LEGAL_DIR=.data/real_legal uv run pytest tests/test_legal_real_pdfs.py  # real reprints
 make web-install web-check           # pnpm install; tsc + eslint + vitest
 make dev-token                       # demo tenant + partner token (dev sign-in form)
 make web-dev                         # Next on :3000 with TRAVO_DEV_LOGIN=true; BFF → TRAVO_API_URL
@@ -106,6 +108,8 @@ PYTHONPATH=services/api:services/rag:services/router:services/agents \
   statute text by hand (ADR-014). Fixture units are titled "FIXTURE — not law".
 - Real statutes enter only via `legal-fetch` → `ingest-legal` (raw snapshots + sha256). New or
   changed snapshots are `unverified`; `TRAVO_REQUIRE_VERIFIED_SOURCES=true` in pilots/prod (ADR-019).
+  Real statute files (PDFs/snapshots) never go in git; the parser must never drop body text
+  silently — keep its accounting check at zero (ADR-020).
 - Few-shot examples are filtered to matters the initiator is a member of (ADR-015).
 - Web: `apps/web/src/lib/types.ts` mirrors `schemas.py` — change both together. The browser only
   calls `/api/*` and `/auth/*` (same origin) and never holds a bearer token: it lives in the

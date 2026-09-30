@@ -276,6 +276,7 @@ class LegalUnitOut(BaseModel):
     effective_from: date | None
     effective_to: date | None
     official_url: str | None
+    issuing_body: str | None = None
     is_fixture: bool
     review_status: str = "unverified"
     verified_at: datetime | None = None

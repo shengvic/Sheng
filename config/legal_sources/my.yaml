@@ -1,7 +1,10 @@
-# Malaysian instruments for contract review (ADR-019). Act numbers are from memory [verify].
-# URLs are intentionally empty: paste the official English reprint PDF link from the Laws of
-# Malaysia portal (AGC) for each Act, then run `make legal-fetch JUR=MY`. Entries without a URL
-# are reported as "needs_url", never guessed.
+# Malaysian instruments for contract review (ADR-019, ADR-020). Act numbers are from memory
+# [verify] unless noted. Two ways in:
+# - `url`: the official English reprint PDF on the Laws of Malaysia portal (AGC) — then
+#   `make legal-fetch JUR=MY`.
+# - a PDF obtained from the portal by hand — `make legal-import FILE=… ID=MY/ACT136`, then
+#   `make legal-fetch JUR=MY OFFLINE=1`. Add the official URL here when known.
+# Entries with neither are reported as "needs_url", never guessed.
 jurisdiction: MY
 issuing_body: Attorney General's Chambers of Malaysia (Laws of Malaysia)
 instruments:
@@ -11,12 +14,20 @@ instruments:
     url: null
     format: pdf
     expect_title: Contracts Act 1950
+    notes: >-
+      Supplied 2026-09-30: English reprint incorporating amendments up to 1 January 2006.
+      Later amendments must be checked against the portal before verification.
   - id: MY/ACT709
     title: Personal Data Protection Act 2010 (Act 709)
     number: "709"
     url: null
     format: pdf
     expect_title: Personal Data Protection Act 2010
+    notes: >-
+      Supplied 2026-09-30: English reprint as at 1 July 2023. It predates the Personal Data
+      Protection (Amendment) Act 2024 (Act A1727) [verify], so amended provisions (e.g. on
+      cross-border transfer and breach notification) are NOT in this text. Get the current
+      reprint before a lawyer verifies it.
   - id: MY/ACT646
     title: Arbitration Act 2005 (Act 646)
     number: "646"

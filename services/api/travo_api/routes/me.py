@@ -47,6 +47,7 @@ def legal_unit(unit_id: str, actor: Actor = Depends(get_actor)) -> LegalUnitOut:
         effective_from=unit.effective_from,
         effective_to=unit.effective_to,
         official_url=source.official_url,
+        issuing_body=source.issuing_body,
         is_fixture=source.is_fixture,
         review_status=source.review_status,
         verified_at=source.verified_at,

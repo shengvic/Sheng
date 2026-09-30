@@ -33,10 +33,12 @@ class FetchError(RuntimeError):
 @dataclass(frozen=True)
 class Snapshot:
     path: Path
-    url: str
+    url: str | None  # None for a supplied file with no known official URL
     sha256: str
     retrieved_at: datetime
     content_type: str
+    origin: str = "fetched"  # fetched | supplied (a file given to us, e.g. a PDF from AGC)
+    filename: str | None = None  # original name of a supplied file
 
     def read(self) -> bytes:
         return self.path.read_bytes()
@@ -121,8 +123,14 @@ class PoliteFetcher:
         raise FetchError(f"{url}: gave up after {self.retries} attempts ({err})")
 
 
+def _stamp_order(meta: Path) -> tuple[str, int]:
+    """`20260930T043803Z-2.meta.json` → ("20260930T043803Z", 2): same-second saves sort after."""
+    base, _, n = meta.name.removesuffix(".meta.json").partition("-")
+    return base, int(n or 0)
+
+
 class SnapshotStore:
-    """`<root>/<JUR>/<name>/<timestamp>.<ext>` + `<timestamp>.meta.json`. Never overwritten."""
+    """`<root>/<JUR>_<name>/<timestamp>.<ext>` + `<timestamp>.meta.json`. Never overwritten."""
 
     def __init__(self, root: Path):
         self.root = root
@@ -133,15 +141,21 @@ class SnapshotStore:
     def save(
         self,
         inst: Instrument,
-        url: str,
+        url: str | None,
         content: bytes,
         content_type: str,
         now: datetime | None = None,
+        *,
+        origin: str = "fetched",
+        filename: str | None = None,
     ) -> Snapshot:
         now = now or datetime.now(UTC)
-        stamp = now.strftime("%Y%m%dT%H%M%SZ")
         d = self._dir(inst)
         d.mkdir(parents=True, exist_ok=True)
+        base = now.strftime("%Y%m%dT%H%M%SZ")
+        stamp, n = base, 1
+        while (d / f"{stamp}.meta.json").exists():  # never overwrite a snapshot
+            stamp, n = f"{base}-{n}", n + 1
         path = d / f"{stamp}.{EXT[inst.format]}"
         sha = hashlib.sha256(content).hexdigest()
         path.write_bytes(content)
@@ -154,15 +168,17 @@ class SnapshotStore:
                     "bytes": len(content),
                     "content_type": content_type,
                     "retrieved_at": now.isoformat(),
+                    "origin": origin,
+                    "filename": filename,
                 },
                 indent=2,
             )
         )
-        return Snapshot(path, url, sha, now, content_type)
+        return Snapshot(path, url, sha, now, content_type, origin, filename)
 
     def latest(self, inst: Instrument) -> Snapshot | None:
         d = self._dir(inst)
-        metas = sorted(d.glob("*.meta.json")) if d.exists() else []
+        metas = sorted(d.glob("*.meta.json"), key=_stamp_order) if d.exists() else []
         if not metas:
             return None
         meta = json.loads(metas[-1].read_text())
@@ -175,4 +191,6 @@ class SnapshotStore:
             meta["sha256"],
             datetime.fromisoformat(meta["retrieved_at"]),
             meta["content_type"],
+            meta.get("origin", "fetched"),
+            meta.get("filename"),
         )

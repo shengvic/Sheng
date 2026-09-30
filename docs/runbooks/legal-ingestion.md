@@ -1,12 +1,13 @@
 # Runbook — Ingesting official SG/MY statutes
 
-> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [04 §9](../04-legal-rag-and-citation-validation.md), ADR-014, ADR-019, [13 Q11](../13-open-questions.md)
+> **Status:** Draft v1 · **Last updated:** 2026-09-30 · **Related:** [04 §9](../04-legal-rag-and-citation-validation.md), ADR-014, ADR-019, ADR-020, [13 Q11](../13-open-questions.md)
 
 Run this on a machine that can reach the official portals (Singapore Statutes Online,
 AGC Malaysia). The dev container used to build Travo could not reach them.
 
 ## 0. Before the first run
-- Confirm the portals' terms of use permit this use (Q11). Keep snapshots private.
+- Terms of use are confirmed (Q11, ADR-020). Keep snapshots and supplied PDFs private: never
+  commit them.
 - Check each instrument in `config/legal_sources/sg.yaml` and `my.yaml` against the portal:
   - the title and number;
   - the URL. Every MY entry is `url: null` until someone fills in the official PDF link from
@@ -28,6 +29,17 @@ make legal-fetch JUR=SG          # or JUR=MY, or omit for all
 - To re-parse without downloading again (for example after a parser fix), run
   `make legal-fetch JUR=SG OFFLINE=1`.
 
+### 1a. Files downloaded by hand (e.g. AGC PDFs)
+If the portal can't be reached by the fetcher, a person downloads the official PDF and runs:
+```
+make legal-import FILE=~/Downloads/Contracts-Act-1950.pdf ID=MY/ACT136 [URL=https://…]
+make legal-fetch JUR=MY OFFLINE=1
+```
+Use the English reprint from the Laws of Malaysia portal, the latest one available. Check the
+cover date: "As at …" / "Incorporating all amendments up to …". The report warns when the text
+is more than 5 years old. It cannot know about amendments made after a newer reprint, so check
+the portal's list of amendments.
+
 ## 2. Check the review report (legal engineer)
 Open `out/legal/SG-review.md`. For each parsed instrument:
 - Compare the section count with the portal's table of contents.
@@ -35,6 +47,11 @@ Open `out/legal/SG-review.md`. For each parsed instrument:
   heading, the subsection labels (1), (2), (a), and where each section ends.
 - Read the warnings: duplicates, and a missing "as at" date, which means the units get no
   `effective_from`.
+- "heading differs from contents" lists typos in the official contents table. The body
+  wording is used; confirm it against the printed page.
+- "Editorial notes set aside" are `*NOTE` footnotes. They are not statute text and are not
+  ingested.
+- Schedules and appendices are not ingested yet. The report says where parsing stopped.
 - If a parse is wrong, fix the parser or the manifest (never the text) and re-run offline.
 
 ## 3. Ingest (unverified)

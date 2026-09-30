@@ -11,7 +11,13 @@ from pydantic import ValidationError
 from travo_rag.legal_index import dump_jsonl, read_jsonl, upsert_units
 from travo_rag.sources.fetch import FetchError, PoliteFetcher, SnapshotStore
 from travo_rag.sources.manifest import Instrument, Manifest, load_manifests
-from travo_rag.sources.parsers import ParseError, parse_snapshot, split_sections
+from travo_rag.sources.parsers import (
+    ParseError,
+    parse_snapshot,
+    split_document,
+    split_sections,
+    version_date,
+)
 from travo_rag.sources.pipeline import run, write_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -261,6 +267,131 @@ def test_act_style_pdf_drops_running_headers_and_toc(tmp_path):
 def test_splitter_warns_on_duplicates():
     secs, warns = split_sections(["1. First body text here.", "1. First body text here, longer."])
     assert len(secs) == 1 and secs[0].text.endswith("longer.") and warns
+
+
+# Real AGC reprints (ADR-020) showed these layouts; the pages below imitate them with FIXTURE text.
+
+HEAD_ODD, HEAD_EVEN = "FIXTURE Agreements {n}", "{n} Laws of Fixtureland ACT 999"
+
+
+def _act_pages() -> list[list[str]]:
+    """An AGC-style reprint: cover, contents with Parts and wrapped headings, running headers."""
+    return [
+        ["FIXTURE Agreements 1", "LAWS OF FIXTURELAND", "REPRINT", "Act 999",
+         "FIXTURE AGREEMENTS ACT 2099", "Incorporating all amendments up", "to 1 January 2006"],
+        ["2 Laws of Fixtureland ACT 999", "LAWS OF FIXTURELAND", "Act 999",
+         "FIXTURE AGREEMENTS ACT 2099", "ARRANGEMENT OF SECTIONS", "PART I", "PRELIMINARY",
+         "Section", "1. Short title", "2. Interpretation", "PART II", "OF FIXTURE PROMISES",
+         "3. FIXTURE promises made by persons of", "sound mind", "4. (1) FIXTURE wagers void",
+         "(2) Exception in favour of certain FIXTURE", "prizes"],
+        ["FIXTURE Agreements 3", "Division 1", "Fixture Remedies", "5. Remedy for FIXTURE breach",
+         "LAWS OF FIXTURELAND", "Act 999", "FIXTURE AGREEMENTS ACT 2099",
+         "An Act relating to FIXTURE agreements (not law).", "PART I", "PRELIMINARY",
+         "Short title", "1. This Act may be cited as the *FIXTURE Agreements Act 2099.",
+         "*NOTE—FIXTURE editorial note about the short title,", "continued on this line."],
+        ["4 Laws of Fixtureland ACT 999", "Interpretation",
+         "2. In this FIXTURE Act the following words are used in the",
+         "following senses, unless a contrary intention appears from the",
+         "context", "(a) a FIXTURE promise is a promise;"],
+        ["FIXTURE Agreements 5", "PART II", "OF FIXTURE PROMISES",
+         "FIXTURE promises made by persons of", "sound mind",
+         "3. Every FIXTURE promise by a person of sound mind binds him.", "ILLUSTRATION",
+         "A promises B a FIXTURE horse. A is bound.", "FIXTURE wagers void",
+         "4. (1) FIXTURE wagers are void.", "Exception in favour of certain FIXTURE prizes",
+         "(2) FIXTURE prizes for races are not wagers."],
+        ["6 Laws of Fixtureland ACT 999", "Division 1", "Fixture Remedies",
+         "Remedy for FIXTURE breaches", "5. A party injured by a FIXTURE breach may recover.",
+         "LIST OF AMENDMENTS", "Amending law Short title In force from", "- NIL -"],
+    ]  # fmt: skip
+
+
+def test_contents_driven_split_keeps_every_line():
+    split = split_document(_act_pages(), title_hints=("FIXTURE Agreements Act 2099",))
+    secs = {s.number: s for s in split.sections}
+    assert list(secs) == ["1", "2", "3", "4", "5"]
+    # Regression: a wrapped line without final punctuation ("context") used to be dropped.
+    assert "unless a contrary intention appears from the context" in " ".join(
+        secs["2"].text.split()
+    )
+    # Multi-line heading and Part lines are matched against the contents table.
+    assert secs["3"].heading == "FIXTURE promises made by persons of sound mind"
+    assert secs["3"].part == "PART II OF FIXTURE PROMISES"
+    assert "PART II" not in secs["2"].text and "Fixture Remedies" not in secs["4"].text
+    assert secs["5"].part == "Division 1 Fixture Remedies"
+    # Contents typo ("breach" vs "breaches"): body wording kept, difference reported.
+    assert secs["5"].heading == "Remedy for FIXTURE breaches"
+    assert any("heading differs from contents" in w and "s 5" in w for w in split.warnings)
+    # Side note of a subsection and an ILLUSTRATION label stay on their own lines.
+    assert "Exception in favour of certain FIXTURE prizes" in secs["4"].text.splitlines()
+    assert secs["3"].text.splitlines()[1:] == [
+        "ILLUSTRATION",
+        "A promises B a FIXTURE horse. A is bound.",
+    ]
+    # Running headers with page numbers and the footnote are not statute text.
+    body = " ".join(s.text for s in split.sections)
+    assert "Laws of Fixtureland ACT" not in body and "FIXTURE Agreements 5" not in body
+    assert "editorial note" not in body
+    assert secs["1"].notes[0].startswith("*NOTE—FIXTURE editorial note")  # the "*" marker
+    assert split.stopped_at == "LIST OF AMENDMENTS"
+    assert not [w for w in split.warnings if "accounting" in w or "not parsed" in w]
+
+
+def test_numbered_lines_out_of_contents_order_stay_text():
+    pages = _act_pages()
+    pages[3].insert(5, "1. a FIXTURE list item inside section 2;")
+    split = split_document(pages)
+    secs = {s.number: s for s in split.sections}
+    assert list(secs) == ["1", "2", "3", "4", "5"]
+    assert "1. a FIXTURE list item inside section 2;" in secs["2"].text
+
+
+def test_malay_layout_and_version_dates():
+    pages = [
+        ["UNDANG-UNDANG FIXTURELAND", "Akta 998", "AKTA FIXTURE (SARAAN) 2099",
+         "Sebagaimana pada 1 Ogos 2015"],
+        ["FIXTURE (Saraan) 2", "SUSUNAN SEKSYEN", "Seksyen", "1. Tajuk ringkas",
+         "2. Tafsiran FIXTURE", "3. Saraan FIXTURE", "JADUAL PERTAMA"],
+        ["FIXTURE (Saraan) 3", "Suatu Akta FIXTURE (bukan undang-undang).", "Tajuk ringkas",
+         "1. Akta ini bolehlah dinamakan Akta FIXTURE 2099.", "Tafsiran FIXTURE",
+         "2. Dalam Akta ini FIXTURE ertinya FIXTURE.", "Saraan FIXTURE",
+         "3. Saraan FIXTURE hendaklah berupa elaun.", "Jadual ini terpakai bagi FIXTURE"],
+        ["FIXTURE (Saraan) 4", "JADUAL PERTAMA", "1. Perenggan FIXTURE jadual."],
+    ]  # fmt: skip
+    split = split_document(pages)
+    assert [s.number for s in split.sections] == ["1", "2", "3"]
+    assert split.sections[2].text.endswith("Jadual ini terpakai bagi FIXTURE")  # not an end
+    assert split.stopped_at == "JADUAL PERTAMA"
+    assert version_date([ln for p in pages for ln in p]) == date(2015, 8, 1)
+    assert version_date(["Incorporating all amendments up", "to 1 January 2006"]) == date(
+        2006, 1, 1
+    )
+    assert version_date(["As at 1 July 2023"]) == date(2023, 7, 1)
+
+
+def test_supplied_snapshot_without_url_is_parsed_and_reported(tmp_path):
+    from travo_rag.sources.fetch import SnapshotStore
+
+    store = SnapshotStore(tmp_path / "snaps")
+    supplied = inst(id="SG/SUPPLIED", url=None)
+    store.save(supplied, None, HTML, "text/html", origin="supplied", filename="act.html")
+    m = manifest(supplied, inst(id="SG/NOURL", url=None))
+    for fetch in (None, fetcher(site({}, robots=(404, ""))[0])):
+        outcomes = {o.id: o for o in run(m, store, fetch)}
+        assert outcomes["SG/SUPPLIED"].status == "parsed"
+        assert outcomes["SG/SUPPLIED"].origin == "supplied"
+        assert outcomes["SG/NOURL"].status == "needs_url"
+        assert outcomes["SG/SUPPLIED"].units[0].source.official_url is None
+    _, report, _ = write_outputs(list(outcomes.values()), "SG", tmp_path / "out")
+    assert "supplied file `act.html`" in report.read_text()
+
+
+def test_snapshots_are_never_overwritten(tmp_path):
+    store = SnapshotStore(tmp_path)
+    now = datetime(2026, 9, 30, tzinfo=UTC)
+    a = store.save(inst(), "u", b"<p>a</p>", "text/html", now)
+    b = store.save(inst(), "u", b"<p>b</p>", "text/html", now)
+    assert a.path != b.path and a.read() == b"<p>a</p>"
+    assert store.latest(inst()).sha256 == b.sha256
 
 
 # ---------------------------------------------------------------- pipeline

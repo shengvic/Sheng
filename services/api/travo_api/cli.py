@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,9 @@ from travo_api.crypto import new_dek
 from travo_api.db import get_admin_engine, set_tenant
 from travo_api.keys import get_kms
 from travo_api.models import Tenant, User
+
+if TYPE_CHECKING:
+    from travo_rag.sources.fetch import Snapshot
 
 
 def bootstrap_tenant(name: str, admin_email: str, region: str | None = None) -> tuple[str, str]:
@@ -82,6 +86,10 @@ def main() -> None:
     lf.add_argument("--only", action="append", help="instrument id, e.g. SG/UCTA1977")
     lf.add_argument("--offline", action="store_true", help="re-parse stored snapshots only")
     lf.add_argument("--out", default="out/legal")
+    li = sub.add_parser("legal-import", help="store a supplied official file as a snapshot")
+    li.add_argument("file")
+    li.add_argument("--id", required=True, dest="instrument", help="manifest id, e.g. MY/ACT136")
+    li.add_argument("--url", help="official URL of this file, if known")
     lv = sub.add_parser("legal-verify", help="record a lawyer's check of a legal source")
     lv.add_argument("source_id")
     lv.add_argument("--by", required=True, help="reviewing lawyer's email")
@@ -106,6 +114,10 @@ def main() -> None:
         )
     elif args.cmd == "legal-fetch":
         legal_fetch(args.jurisdiction, args.only, args.offline, args.out)
+    elif args.cmd == "legal-import":
+        snap = legal_import(args.file, args.instrument, args.url)
+        print(f"{args.instrument}: stored {snap.path} (sha256 {snap.sha256[:12]}…)")
+        print(f"next: legal-fetch -j {args.instrument[:2]} --offline, then read the review report")
     elif args.cmd == "legal-verify":
         if not legal_verify(args.source_id, args.by, args.note):
             raise SystemExit(f"unknown legal source {args.source_id}")
@@ -216,6 +228,31 @@ def legal_fetch(
         for o in outcomes:
             print(f"  {o.id:<16} {o.status:<13} {len(o.units):>4} sections  {o.detail}")
         print(f"{jur}: {n} units → {jsonl}; review report → {report}")
+
+
+def legal_import(file: str, instrument_id: str, url: str | None) -> Snapshot:
+    """Store a file someone obtained from the official portal (e.g. an AGC PDF) as a snapshot."""
+    from pathlib import Path
+
+    from travo_rag.sources.fetch import SnapshotStore
+    from travo_rag.sources.manifest import load_manifests
+
+    s = get_settings()
+    manifest = load_manifests(s.legal_manifest_dir).get(instrument_id[:2].upper())
+    found = [i for i in manifest.instruments if i.id == instrument_id] if manifest else []
+    inst = found[0] if found else None
+    if inst is None:
+        raise SystemExit(f"{instrument_id} is not in config/legal_sources — add it there first")
+    if url and not url.startswith("https://"):
+        raise SystemExit("--url must be an https:// link to the official portal")
+    path = Path(file)
+    content = path.read_bytes()
+    if inst.format == "pdf" and not content.startswith(b"%PDF"):
+        raise SystemExit(f"{file} is not a PDF but {instrument_id} expects format pdf")
+    ctype = {"pdf": "application/pdf", "sso_html": "text/html", "text": "text/plain"}
+    return SnapshotStore(s.legal_snapshot_dir).save(
+        inst, url or inst.url, content, ctype[inst.format], origin="supplied", filename=path.name
+    )
 
 
 def legal_verify(source_id: str, by: str, note: str | None) -> bool:

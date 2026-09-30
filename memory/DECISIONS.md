@@ -118,3 +118,24 @@ Format: `ADR-NNN — Title` · Date · Status · Context · Decision · Conseque
   - HTML chrome changes force re-verification.
   - Manifest URLs and portal layouts are `[verify]`, and MY PDF URLs must be filled in.
   - Terms of use are open (Q11).
+
+## ADR-020 — Terms of use confirmed; supplied official files; contents-driven statute parser
+- **Date:** 2026-09-30 · **Status:** Accepted
+- **Context:**
+  - The founder confirmed Q11: statute text from the official portals may be stored and served in-product.
+  - The first real AGC reprints (supplied as PDFs) showed that the ADR-019 parser silently dropped wrapped lines, parsed contents entries as sections, and missed Malay layouts.
+  - The reprints carry a Percetakan Nasional Malaysia Berhad "all rights reserved" notice.
+- **Decision:**
+  - `legal-import` stores a file someone obtained from the official portal as a snapshot (`origin: supplied`, optional https URL). It then follows the same parse → review → ingest → `legal-verify` path.
+  - Raw files never go in git. Tests against real reprints run only when `TRAVO_REAL_LEGAL_DIR` is set, and they derive every expectation from the PDF itself.
+  - The splitter is contents-driven and page-aware:
+    - Numbered lines start sections only in contents order.
+    - Headings and Part lines are matched to the contents table (≥ 0.9 for typos, reported).
+    - Chrome is removed only at page edges.
+    - `*NOTE` footnotes are set aside.
+    - An accounting check guarantees no body text is dropped silently.
+  - The UI attributes the issuing body.
+- **Consequences:**
+  - Schedules and appendices are not ingested yet (reported).
+  - Stale reprints (e.g. Contracts Act 2006, PDPA 2023, which predates the 2024 amendments) must be replaced with current ones before verification.
+  - Whether the Q11 clearance covers the PNMB reproduction notice is `[verify]`.

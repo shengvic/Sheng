@@ -140,6 +140,58 @@ Pipeline (`services/rag/travo_rag/sources/`), run with `travo_api.cli legal-fetc
 **Limits.**
 - Parsers were tested only on synthetic pages that imitate the portal layouts. The real
   SSO HTML structure and AGC PDF layout must be confirmed on first run `[verify]`.
-- Portal terms of use for re-use must be cleared (Q11).
+- Portal terms of use: confirmed (Q11, ADR-020); raw files stay out of git.
 - Operating steps: [runbooks/legal-ingestion.md](runbooks/legal-ingestion.md).
+
+### 9.1 Hardened on real AGC reprints (2026-09-30, ADR-020)
+Tested on four real Malaysian reprints:
+- Contracts Act 1950 (Act 136)
+- PDPA 2010 (Act 709)
+- Act 347
+- Act 237 (Malay)
+
+On those files the first parser silently dropped wrapped lines. It also treated contents
+entries as sections and missed Malay layouts. The splitter now works as follows:
+- **Page-aware chrome removal.** Running headers and footers are dropped only at page edges, when
+  their shape (digits normalised) repeats on ≥ 30% of pages. Rule lines are dropped too.
+  Removed shapes are listed in the report.
+- **Footnotes set aside.** `*NOTE—…` lines up to the end of the page are editorial notes. They
+  attach to the section with the `*` marker on that page, appear in the report and are not
+  ingested.
+- **Contents-driven sections.** The contents table ("Arrangement of Sections" / "Susunan
+  Seksyen") is parsed into entries plus Part/Division lines.
+  - In the body, a numbered line starts a section only in contents order. A jump ahead is
+    accepted only if the heading matches.
+  - Numbered list items therefore stay in the text.
+  - The heading and Part lines above each section are matched against the contents text.
+    - Case, spacing and punctuation are ignored.
+    - A match of ≥ 0.9 similarity is accepted, because contents tables have typos (four in
+      Act 136). The difference is reported and the body wording is kept.
+- **Paragraphs.** Subsection side notes and "ILLUSTRATION(S)" labels stay on their own lines.
+  Illustrations and Explanations remain part of the section text.
+- **End markers.** Upper-case lines only: SCHEDULE / JADUAL, APPENDIX, LIST OF AMENDMENTS,
+  SEKSYEN YANG DIPINDA, DICETAK OLEH. Schedules and appendices are not ingested yet.
+- **No silent loss.** An accounting check compares every body character with what was placed:
+  headings, text, Part labels, notes or preamble.
+- **Version date.** Read from "Incorporating all amendments up to …", "As at …" and "Sebagaimana
+  pada …" (Malay months). A text dated more than 5 years ago gets a stale-reprint warning.
+- **Title check.** Ignores spacing, because pypdf splits words ("PARLIAMEN t"). PDF metadata
+  titles are also accepted.
+- **Supplied files.** `legal-import FILE --id MY/ACT136 [--url https://…]` stores a file someone
+  downloaded from the portal as a snapshot with `origin: supplied`. An instrument without a URL
+  is parsed from its latest snapshot. The report says "supplied file — add the official URL".
+- **Attribution.** The API returns `issuing_body`. The sources drawer shows "Source text
+  published by …" for real sources, and links the official URL only if it is `https://`.
+- **Tests.**
+  - Synthetic AGC-style and Malay layouts in `tests/test_legal_sources.py`.
+  - `tests/test_legal_real_pdfs.py` checks the four real reprints: section numbers equal the
+    contents, zero unplaced characters, headings match, text starts with the PDF's own numbered
+    line, and Act 136 goes through ingest → retrieval → API. It runs only when
+    `TRAVO_REAL_LEGAL_DIR` points at the PDFs.
+
+**Status (2026-09-30):**
+- MY/ACT136 and MY/ACT709 are parsed (191 and 146 sections) and unverified.
+- The Contracts Act text is as at 1 Jan 2006, and the PDPA text as at 1 Jul 2023, which is before
+  the 2024 amendments `[verify]`.
+- Current reprints and official URLs are needed before a lawyer runs `legal-verify`.
 

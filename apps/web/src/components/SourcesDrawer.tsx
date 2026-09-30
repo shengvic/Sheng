@@ -62,7 +62,12 @@ export function SourcesDrawer({ unitId, onClose }: { unitId: string; onClose: ()
               {u.retrieved_at && <Chip>retrieved {u.retrieved_at.slice(0, 10)}</Chip>}
             </div>
             <blockquote className="doc-text border-l-2 border-accent pl-3">{u.text}</blockquote>
-            {u.official_url && (
+            {!u.is_fixture && u.issuing_body && (
+              <p className="text-xs text-muted" data-testid="source-attribution">
+                {t.review.sourceBy} {u.issuing_body}
+              </p>
+            )}
+            {u.official_url?.startsWith("https://") && (
               <a className="text-sm text-accent hover:underline" href={u.official_url} target="_blank" rel="noreferrer">
                 Official source ↗
               </a>

@@ -16,4 +16,4 @@
 | Q8 | Default consent for firm-private training (on) acceptable to design partners? | On, tenant-private; global opt-in only | 07 |
 | Q9 | Company entity / data controller location (SG Pte Ltd?) | SG entity | 06 |
 | Q10 | Brand: product name "Travo" cleared for trademark in SG/MY/VN/ID? | Pending search | — |
-| Q11 | Do SSO (AGC Singapore) and AGC Malaysia terms of use allow storing snapshots and serving statute text inside a commercial product? Any attribution wording required? `[verify]` | Store raw snapshots privately, show official URL + retrieval date, attribute the issuing body; confirm before pilots | 04, 06 |
+| ~~Q11~~ | ~~Do SSO (AGC Singapore) and AGC Malaysia terms of use allow storing snapshots and serving statute text inside a commercial product?~~ **Answered 2026-09-30: confirmed by the founder** (ADR-020). Keep raw files private (not in git), show the issuing body and retrieval date, link the official URL when known. AGC reprints also carry a Percetakan Nasional Malaysia Berhad "all rights reserved" notice; confirm that the Q11 clearance covers it `[verify]`. | — | 04, 06 |

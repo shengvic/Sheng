@@ -168,6 +168,7 @@ export interface LegalUnit {
   effective_from: string | null;
   effective_to: string | null;
   official_url: string | null;
+  issuing_body: string | null;
   is_fixture: boolean;
   review_status: "unverified" | "verified";
   verified_at: string | null;

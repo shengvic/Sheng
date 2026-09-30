@@ -38,3 +38,6 @@
 | **Raw snapshot** | Unchanged copy of an official page/PDF as downloaded, with URL, time and sha256 in `.meta.json`. |
 | **Review report** | Markdown output of `legal-fetch` (status, warnings, sample sections) that a legal engineer checks before ingesting. |
 | **Verified source** | A `legal_sources` row a lawyer has checked against the portal (`legal-verify`); resets when the snapshot changes. |
+| **Supplied snapshot** | An official file obtained by hand and stored with `legal-import` (`origin: supplied`); same review and verification path as a fetched one. |
+| **Contents-driven parsing** | Using an Act's "Arrangement of Sections" to decide which numbered lines start sections and which lines are headings or Part titles. |
+| **Editorial note** | A reprint footnote (`*NOTE—…`); shown in the review report, never ingested as law. |

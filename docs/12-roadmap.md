@@ -72,7 +72,8 @@ gantt
 - [x] Law-check agent driven by jurisdiction packs (SG, MY: triggers + queries only)
 - [x] Legal index + JSONL ingestion CLI; full-text retrieval with jurisdiction and in-force filters; lexical rerank
 - [x] Official-source pipeline: manifests (SG 8, MY 6 instruments), polite fetcher, raw snapshots with sha256, HTML/PDF parsers, review report, lawyer verification gate (`legal-verify`, `TRAVO_REQUIRE_VERIFIED_SOURCES`) — ADR-019
-- [ ] Real SG/MY corpus ingested and lawyer-verified (run `legal-fetch` where the portals are reachable; fill MY URLs; confirm terms Q11)
+- [x] Parser hardened on real AGC reprints; `legal-import` for supplied PDFs; MY Contracts Act + PDPA parsed (unverified) — ADR-020
+- [ ] Real SG/MY corpus ingested and lawyer-verified: current MY reprints + official URLs, remaining 4 MY Acts, SG via `legal-fetch` where SSO is reachable
 - [ ] Dense retrieval (pgvector) + cross-encoder reranker
 - [x] Per-claim citation validator (existence, in-force, quote fidelity, entailment via router) + export gate
 - [x] Escalation T1 → T2 on low confidence / failed citations; conflict-blocked escalation → `needs_human`

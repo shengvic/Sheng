@@ -12,6 +12,38 @@ Template:
 
 ---
 
+## 2026-09-30 — P1 slice 5: parser hardened on real AGC reprints; MY Acts imported
+- **Done:**
+  - **Inputs:** the founder supplied 4 AGC Malaysia PDFs:
+    - Contracts Act 1950 (Act 136)
+    - PDPA 2010 (Act 709)
+    - Act 347
+    - Act 237 (Malay)
+
+    They also confirmed Q11.
+  - **Parser rewrite:** the real files exposed silent line loss and other failures. The splitter is now contents-driven and page-aware:
+    - chrome is removed only at page edges;
+    - `*NOTE` footnotes are set aside;
+    - headings and Part lines are matched to the contents (close match for contents typos);
+    - Malay end markers and dates are handled;
+    - an accounting check catches any dropped text.
+  - **Results:** all 4 Acts parse with section numbers identical to their contents tables (191/146/34/14) and zero unplaced text.
+  - **Import and UI:**
+    - `legal-import` command for supplied files (`origin: supplied`).
+    - Snapshots are never overwritten.
+    - The report shows notes, Part labels, stats and manifest notes.
+    - API and drawer show the issuing body.
+  - **Tests:** 5 new synthetic tests, plus env-gated real-PDF tests including ingest → retrieval → API. All checks green.
+- **Decisions:** ADR-020.
+- **Next:**
+  1. Get the current MY reprints (the Contracts Act text is as at 2006; the PDPA as at July 2023, before the 2024 amendments [verify]) and their official URLs. Then have a lawyer review `out/legal/my-review.md` and run `legal-verify`.
+  2. Remaining MY Acts: 646, 137, 254, 658. Then SG via `legal-fetch`.
+  3. Ingest schedules and appendices (e.g. Contracts (Amendment) Act 1976 scholarship provisions).
+- **Open threads:**
+  - Does the Q11 clearance cover the PNMB reproduction notice? [verify]
+  - Split-word PDF artefacts ("di -Pertua") are kept verbatim.
+  - Acts 347/237 are used only as parser samples, not in the manifest.
+
 ## 2026-09-30 — P1 slice 4: official-statute pipeline + lawyer verification
 - **Done:**
   - **Manifests:** `config/legal_sources/{sg,my}.yaml` with 8 SG instruments (SSO HTML) and 6 MY instruments (AGC PDF, `url: null` until filled).
