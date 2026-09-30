@@ -1,0 +1,130 @@
+# Vietnamese instruments for the VN pilot (docs/14 §3.2, ADR-022/023). Numbers, titles and
+# dates are from memory [verify]. Official Vietnamese text only (it is the authoritative
+# version); English translations are never ingested as law.
+# URLs: the full-text page ("toàn văn") on vbpl.vn — filled in once the fetcher can reach the
+# site (network policy / the pilot VPS). A file downloaded by hand from vbpl.vn or Công báo can
+# be stored with `make legal-import FILE=… ID=VN/…` (format docx/pdf, set `format` to match).
+# Prefer the consolidated text (văn bản hợp nhất) where an instrument has been amended.
+jurisdiction: VN
+issuing_body: Cơ sở dữ liệu quốc gia về văn bản pháp luật (Bộ Tư pháp) — vbpl.vn
+instruments:
+  - id: VN/BLDS2015
+    title: Bộ luật Dân sự 2015
+    instrument_type: code
+    number: 91/2015/QH13
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Bộ luật Dân sự
+  - id: VN/LTM2005
+    title: Luật Thương mại 2005
+    instrument_type: law
+    number: 36/2005/QH11
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Thương mại
+  - id: VN/LTTTM2010
+    title: Luật Trọng tài thương mại 2010
+    instrument_type: law
+    number: 54/2010/QH12
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Trọng tài thương mại
+  - id: VN/BLTTDS2015
+    title: Bộ luật Tố tụng dân sự 2015
+    instrument_type: code
+    number: 92/2015/QH13
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Bộ luật Tố tụng dân sự
+  - id: VN/LDN2020
+    title: Luật Doanh nghiệp 2020
+    instrument_type: law
+    number: 59/2020/QH14
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Doanh nghiệp
+  - id: VN/LDT2020
+    title: Luật Đầu tư 2020
+    instrument_type: law
+    number: 61/2020/QH14
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Đầu tư
+  - id: VN/LBVDLCN2025
+    title: Luật Bảo vệ dữ liệu cá nhân 2025
+    instrument_type: law
+    number: 91/2025/QH15
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Bảo vệ dữ liệu cá nhân
+  - id: VN/ND13-2023
+    title: Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân
+    instrument_type: decree
+    number: 13/2023/NĐ-CP
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: bảo vệ dữ liệu cá nhân
+  - id: VN/LANM2018
+    title: Luật An ninh mạng 2018
+    instrument_type: law
+    number: 24/2018/QH14
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật An ninh mạng
+  - id: VN/ND53-2022
+    title: Nghị định 53/2022/NĐ-CP hướng dẫn Luật An ninh mạng
+    instrument_type: decree
+    number: 53/2022/NĐ-CP
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: an ninh mạng
+  - id: VN/LDL2024
+    title: Luật Dữ liệu 2024
+    instrument_type: law
+    number: 60/2024/QH15
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Dữ liệu
+  - id: VN/LGDDT2023
+    title: Luật Giao dịch điện tử 2023
+    instrument_type: law
+    number: 20/2023/QH15
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Giao dịch điện tử
+  - id: VN/LSHTT
+    title: Luật Sở hữu trí tuệ (văn bản hợp nhất)
+    instrument_type: law
+    number: null
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Luật Sở hữu trí tuệ
+  - id: VN/PLNH
+    title: Pháp lệnh Ngoại hối (văn bản hợp nhất)
+    instrument_type: ordinance
+    number: null
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Pháp lệnh Ngoại hối
+  - id: VN/BLLD2019
+    title: Bộ luật Lao động 2019
+    instrument_type: code
+    number: 45/2019/QH14
+    url: null
+    format: vbpl_html
+    language: vi
+    expect_title: Bộ luật Lao động

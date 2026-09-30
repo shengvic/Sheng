@@ -7,6 +7,7 @@ Dense retrieval (pgvector) plugs in via `DenseRetriever` and is merged by recipr
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Protocol
@@ -14,32 +15,19 @@ from typing import Any, Protocol
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-_WORD = re.compile(r"[^\W_]{3,}", re.UNICODE)
+# Vietnamese words are written as syllables, many of two letters ("bộ", "lý", "về"), so
+# terms of two letters are kept and function words are stopped instead.
+_WORD = re.compile(r"[^\W_]{2,}", re.UNICODE)
 _STOP = {
-    "the",
-    "and",
-    "for",
-    "that",
-    "this",
-    "with",
-    "shall",
-    "any",
-    "are",
-    "not",
-    "under",
-    "such",
-    "all",
-    "may",
-    "its",
-    "which",
-    "from",
-    "been",
-    "has",
-    "have",
-    "each",
-    "other",
-    "into",
-}
+    # English
+    "the", "and", "for", "that", "this", "with", "shall", "any", "are", "not", "under", "such",
+    "all", "may", "its", "which", "from", "been", "has", "have", "each", "other", "into", "of",
+    "to", "in", "on", "or", "by", "be", "an", "as", "at", "is", "it", "if", "no",
+    # Vietnamese function words
+    "và", "của", "các", "có", "được", "cho", "là", "với", "theo", "trong", "này", "những",
+    "một", "khi", "thì", "để", "đã", "sẽ", "tại", "về", "do", "từ", "đến", "hoặc", "nếu",
+    "mà", "như", "trên", "bị", "vào", "ra", "phải", "không",
+}  # fmt: skip
 
 
 @dataclass(frozen=True)
@@ -59,7 +47,14 @@ class LegalUnitHit:
 
     @property
     def pinpoint(self) -> str:
-        return f"{self.source_title}, {self.unit_path}"
+        return format_pinpoint(self.source_title, self.unit_path)
+
+
+def format_pinpoint(source_title: str, unit_path: str) -> str:
+    """ "Contracts Act 1950, s 75"; Vietnamese style "Điều 301 Luật Thương mại 2005"."""
+    if unit_path.startswith(("Điều", "Khoản", "Điểm")):
+        return f"{unit_path} {source_title}"
+    return f"{source_title}, {unit_path}"
 
 
 class DenseRetriever(Protocol):
@@ -68,7 +63,7 @@ class DenseRetriever(Protocol):
 
 def terms(textish: str) -> list[str]:
     seen: list[str] = []
-    for w in _WORD.findall(textish.lower()):
+    for w in _WORD.findall(unicodedata.normalize("NFC", textish).lower()):
         if w not in _STOP and w not in seen:
             seen.append(w)
     return seen
@@ -104,11 +99,15 @@ def search(
     if not words or not jurisdictions:
         return []
     tsquery = " | ".join(words)
+    # Match the text as written or without tone marks (tsv_plain, migration 0008).
     rows = session.execute(
         text(
-            f"{_SELECT}, ts_rank_cd(u.tsv, to_tsquery('simple', :q)) AS rank"
+            f"{_SELECT}, GREATEST(ts_rank_cd(u.tsv, to_tsquery('simple', :q)),"
+            " ts_rank_cd(u.tsv_plain, to_tsquery('simple', f_unaccent(:q)))) AS rank"
             " FROM legal_units u JOIN legal_sources s ON s.id = u.source_id"
-            " WHERE u.tsv @@ to_tsquery('simple', :q) AND s.jurisdiction = ANY(:j)"
+            " WHERE (u.tsv @@ to_tsquery('simple', :q)"
+            " OR u.tsv_plain @@ to_tsquery('simple', f_unaccent(:q)))"
+            " AND s.jurisdiction = ANY(:j)"
             f" AND {_in_force(as_of)}"
             + (" AND s.review_status = 'verified'" if require_verified else "")
             + " ORDER BY rank DESC LIMIT :n"

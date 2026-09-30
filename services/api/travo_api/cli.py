@@ -284,7 +284,13 @@ def legal_import(file: str, instrument_id: str, url: str | None) -> Snapshot:
     content = path.read_bytes()
     if inst.format == "pdf" and not content.startswith(b"%PDF"):
         raise SystemExit(f"{file} is not a PDF but {instrument_id} expects format pdf")
-    ctype = {"pdf": "application/pdf", "sso_html": "text/html", "text": "text/plain"}
+    ctype = {
+        "pdf": "application/pdf",
+        "sso_html": "text/html",
+        "vbpl_html": "text/html",
+        "text": "text/plain",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
     return SnapshotStore(s.legal_snapshot_dir).save(
         inst, url or inst.url, content, ctype[inst.format], origin="supplied", filename=path.name
     )

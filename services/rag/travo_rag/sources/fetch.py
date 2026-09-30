@@ -23,7 +23,7 @@ import httpx
 
 from travo_rag.sources.manifest import Instrument
 
-EXT = {"sso_html": "html", "pdf": "pdf", "text": "txt"}
+EXT = {"sso_html": "html", "pdf": "pdf", "text": "txt", "vbpl_html": "html", "docx": "docx"}
 
 
 class FetchError(RuntimeError):

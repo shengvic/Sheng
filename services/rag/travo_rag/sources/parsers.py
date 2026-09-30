@@ -612,6 +612,10 @@ class ParseResult:
 def parse_snapshot(
     inst: Instrument, snap: Snapshot, issuing_body: str, today: date | None = None
 ) -> ParseResult:
+    if inst.language == "vi" or inst.format in ("vbpl_html", "docx"):
+        from travo_rag.sources.parsers_vn import parse_vn_snapshot  # Điều/Khoản grammar
+
+        return parse_vn_snapshot(inst, snap, issuing_body)
     raw = snap.read()
     if inst.format == "sso_html":
         title, lines = html_lines(raw)

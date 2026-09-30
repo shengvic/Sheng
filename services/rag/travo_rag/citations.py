@@ -7,6 +7,7 @@ Checks: existence → in force at as-of date → quote fidelity → entailment (
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
@@ -15,7 +16,22 @@ from travo_rag.retrieval import LegalUnitHit, is_in_force, terms
 
 CITE = re.compile(r"\[\[src:([^\]]+)\]\]")
 QUOTE = re.compile(r"[\"“]([^\"”]{8,})[\"”]")
-_SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z\"“(])")
+_BREAK = re.compile(r"(?<=[.!?])\s+")
+
+
+def _sentences(text: str) -> list[str]:
+    """Split after . ! ? when the next sentence starts with a capital (any script, so
+    Vietnamese "Điều", "Bên", "Ưu" count), a quote or a parenthesis."""
+    out: list[str] = []
+    start = 0
+    for m in _BREAK.finditer(text):
+        nxt = text[m.end() : m.end() + 1]
+        if nxt and (nxt.isupper() or nxt in '"“('):
+            out.append(text[start : m.start()])
+            start = m.end()
+    out.append(text[start:])
+    return out
+
 
 PASSING = {"supported"}
 
@@ -51,7 +67,7 @@ Judge = Callable[[list[tuple[str, LegalUnitHit]]], list[tuple[str, float]]]
 
 def split_claims(generated: str) -> list[Claim]:
     claims = []
-    for sentence in _SENT.split(generated.strip()):
+    for sentence in _sentences(generated.strip()):
         sentence = sentence.strip()
         if not sentence:
             continue
@@ -62,7 +78,8 @@ def split_claims(generated: str) -> list[Claim]:
 
 
 def _norm(s: str) -> str:
-    return re.sub(r"\s+", " ", s).strip().lower()
+    # NFC: Vietnamese tone marks may be precomposed or combining; both must compare equal.
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", s)).strip().lower()
 
 
 def lexical_support(claim: str, source_heading: str, source_text: str) -> tuple[str, float]:

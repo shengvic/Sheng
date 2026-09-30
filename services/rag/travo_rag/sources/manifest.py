@@ -8,7 +8,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
-Format = Literal["sso_html", "pdf", "text"]
+Format = Literal["sso_html", "pdf", "text", "vbpl_html", "docx"]
 
 
 class Instrument(BaseModel):

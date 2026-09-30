@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from travo_rag.retrieval import format_pinpoint
 
 from travo_api.auth import Actor, get_actor
 from travo_api.models import LegalSource, LegalUnit, Tenant
@@ -40,7 +41,7 @@ def legal_unit(unit_id: str, actor: Actor = Depends(get_actor)) -> LegalUnitOut:
         source_title=source.title,
         jurisdiction=source.jurisdiction,
         unit_path=unit.unit_path,
-        pinpoint=f"{source.title}, {unit.unit_path}",
+        pinpoint=format_pinpoint(source.title, unit.unit_path),
         heading=unit.heading,
         text=unit.text,
         status=unit.status,
