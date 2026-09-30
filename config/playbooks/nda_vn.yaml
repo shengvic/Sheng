@@ -1,0 +1,123 @@
+# Travo starter playbook — DRAFT, requires review by a Vietnamese-qualified lawyer [verify].
+# Firm positions only (no statute text, ADR-014). Legal references in rationales are [verify].
+# Keyword checks accept Vietnamese and English wording (bilingual and English-only contracts).
+key: nda_vn
+version: 1
+name: NDA (Vietnamese law) — starter draft
+applies_to: { contract_types: [NDA], governing_laws: [VN] }
+rules:
+  - key: confidentiality_core
+    clause_key: confidentiality_obligations
+    required: true
+    standard: Recipient keeps information confidential and uses it only for the Purpose.
+    standard_vi: Bên Nhận giữ bí mật thông tin và chỉ sử dụng cho Mục đích đã thỏa thuận.
+    must_include_any: [bảo mật, bí mật, confidential]
+    severity: high
+    rationale: Core protection of the NDA.
+    redline_template: >-
+      The Recipient shall keep the Confidential Information strictly confidential and shall use
+      it solely for the Purpose.
+    redline_template_vi: >-
+      Bên Nhận phải giữ bí mật tuyệt đối Thông tin mật và chỉ được sử dụng Thông tin mật cho
+      Mục đích của Thỏa thuận này.
+  - key: term_length
+    clause_key: term_and_termination
+    required: true
+    standard: At least 2 years; 1 year acceptable as fallback.
+    standard_vi: Tối thiểu 02 năm; 01 năm là phương án có thể chấp nhận.
+    min_duration_months: 24
+    fallback_min_duration_months: 12
+    severity: high
+    rationale: Short terms expose the client once the agreement lapses.
+    redline_template: >-
+      This Agreement remains in force for two (2) years from the Effective Date, and the
+      confidentiality obligations survive its termination for a further two (2) years.
+    redline_template_vi: >-
+      Thỏa thuận này có hiệu lực trong thời hạn hai (02) năm kể từ Ngày hiệu lực; nghĩa vụ
+      bảo mật tiếp tục có hiệu lực trong hai (02) năm sau khi Thỏa thuận chấm dứt.
+  - key: exclusions_present
+    clause_key: exclusions
+    required: true
+    standard: Standard carve-outs (public domain, prior knowledge, independent development).
+    standard_vi: Các trường hợp loại trừ tiêu chuẩn (thông tin công khai, đã biết trước, tự phát triển).
+    severity: medium
+    rationale: Without carve-outs the Recipient may be exposed to unreasonable claims.
+    redline_template: >-
+      The obligations in this Agreement do not apply to information that is or becomes public
+      other than through breach, was lawfully known to the Recipient before disclosure, or is
+      independently developed.
+    redline_template_vi: >-
+      Nghĩa vụ bảo mật không áp dụng đối với thông tin đã hoặc trở nên công khai không do vi
+      phạm Thỏa thuận này, thông tin Bên Nhận đã biết một cách hợp pháp trước khi được tiết lộ,
+      hoặc thông tin do Bên Nhận tự phát triển độc lập.
+  - key: permitted_disclosure_present
+    clause_key: permitted_disclosure
+    required: true
+    standard: Disclosure permitted where required by law or a competent authority, with notice.
+    standard_vi: Được tiết lộ theo yêu cầu của pháp luật hoặc cơ quan có thẩm quyền, có thông báo.
+    severity: medium
+    rationale: Needed to comply with courts and state authorities.
+  - key: return_destroy
+    clause_key: return_or_destruction
+    required: true
+    standard: Return or destroy on request, with written confirmation.
+    standard_vi: Hoàn trả hoặc tiêu hủy khi có yêu cầu và xác nhận bằng văn bản.
+    severity: medium
+    rationale: Ensures information does not linger after the relationship.
+    redline_template: >-
+      On request, the Recipient shall promptly return or destroy all Confidential Information
+      and confirm in writing that it has done so.
+    redline_template_vi: >-
+      Khi có yêu cầu, Bên Nhận phải hoàn trả hoặc tiêu hủy toàn bộ Thông tin mật trong thời gian
+      sớm nhất và xác nhận bằng văn bản về việc đã thực hiện.
+  - key: penalty_cap
+    clause_key: penalty
+    max_percent: 8
+    severity: medium
+    standard: A contractual penalty, if any, stays within the statutory cap for commercial
+      contracts (8% of the breached obligation) [verify].
+    standard_vi: Mức phạt vi phạm (nếu có) không vượt quá 8% giá trị phần nghĩa vụ bị vi phạm [verify].
+    rationale: >-
+      Luật Thương mại 2005, Điều 301 caps penalties in commercial contracts [verify]; a higher
+      rate risks being unenforceable above the cap.
+  - key: governing_law_vn
+    clause_key: governing_law
+    required: true
+    standard: Vietnamese law.
+    standard_vi: Pháp luật Việt Nam.
+    must_include_any: [pháp luật việt nam, laws of vietnam, laws of viet nam, vietnamese law, laws of the socialist republic of vietnam]
+    severity: medium
+    rationale: >-
+      Foreign law may be chosen only for contracts with a foreign element (Bộ luật Dân sự 2015,
+      Điều 663 and 683 [verify]); for a purely domestic contract it may not be applied.
+    redline_template: This Agreement is governed by the laws of Vietnam.
+    redline_template_vi: Thỏa thuận này được điều chỉnh bởi pháp luật Việt Nam.
+  - key: forum_vn
+    clause_key: dispute_resolution
+    required: true
+    standard: VIAC arbitration or a competent Vietnamese court.
+    standard_vi: Trọng tài VIAC hoặc Tòa án có thẩm quyền của Việt Nam.
+    must_include_any: [viac, trọng tài, tòa án, arbitration, court]
+    severity: medium
+    rationale: A clear, enforceable forum; foreign arbitration needs a foreign element [verify].
+  - key: personal_data
+    clause_key: data_protection
+    required: true
+    standard: Parties comply with Vietnamese personal data protection law.
+    standard_vi: Các bên tuân thủ pháp luật Việt Nam về bảo vệ dữ liệu cá nhân.
+    severity: low
+    rationale: Personal data is often exchanged under NDAs (PDP Law 2025 [verify]).
+  - key: language_prevailing
+    clause_key: language
+    required: true
+    standard: States which language version prevails.
+    standard_vi: Quy định rõ bản ngôn ngữ nào được ưu tiên áp dụng.
+    must_include_any: [ưu tiên, prevail]
+    severity: medium
+    rationale: Bilingual contracts need a tie-breaker when the versions differ.
+    redline_template: >-
+      This Agreement is made in Vietnamese and English. If the two versions differ, the
+      Vietnamese version prevails.
+    redline_template_vi: >-
+      Thỏa thuận này được lập bằng tiếng Việt và tiếng Anh. Trường hợp có sự khác biệt giữa hai
+      bản, bản tiếng Việt được ưu tiên áp dụng.

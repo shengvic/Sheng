@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from travo_agents.numbers import amounts, durations_months
+from travo_agents.numbers import amounts, durations_months, percents
 from travo_agents.playbooks import ClauseRule
 
 # Figures, words and units in English and Vietnamese live in `numbers.py` (shared with the
@@ -33,6 +33,17 @@ def evaluate_rule(rule: ClauseRule, clauses: list[dict[str, Any]]) -> dict[str, 
         return _f(
             rule, idx, "non_standard", f"Expected one of: {', '.join(rule.must_include_any)}.", 0.7
         )
+
+    if rule.max_percent is not None:
+        over = [p for p in percents(body) if p > rule.max_percent]
+        if over:
+            return _f(
+                rule,
+                idx,
+                "non_standard",
+                f"Rate of {over[0]:g}% exceeds the playbook maximum of {rule.max_percent:g}%.",
+                0.9,
+            )
 
     months = durations_months(body)
     if months and (rule.min_duration_months or rule.max_duration_months):

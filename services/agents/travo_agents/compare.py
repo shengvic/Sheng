@@ -27,6 +27,7 @@ class FindingDraft:
     escalated: bool = False
     needs_human: bool = False
     redline_template: str | None = None
+    redline_template_vi: str | None = None
     suggested_redline: str | None = None
     note: str | None = None  # law notes: generated text with [[src:…]] markers
     evidence: dict[str, Any] | None = None  # bilingual findings: both spans, prevailing language
@@ -92,6 +93,7 @@ def compare(
                 escalated=result.escalated,
                 needs_human=result.needs_human,
                 redline_template=rule.redline_template,
+                redline_template_vi=rule.redline_template_vi,
             )
         )
     return drafts

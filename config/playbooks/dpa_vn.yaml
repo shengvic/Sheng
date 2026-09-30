@@ -1,0 +1,66 @@
+# Travo starter playbook — DRAFT, requires review by a Vietnamese-qualified lawyer [verify].
+# Personal data processing agreements under Vietnamese law (PDP Law 2025 and implementing
+# rules [verify]). Firm positions only (ADR-014).
+key: dpa_vn
+version: 1
+name: Data processing agreement (Vietnamese law) — starter draft
+applies_to: { contract_types: [DPA], governing_laws: [VN] }
+rules:
+  - key: processing_scope
+    clause_key: processing_scope
+    required: true
+    standard: Types of data, data subjects, purposes, duration and documented instructions.
+    standard_vi: Loại dữ liệu, chủ thể dữ liệu, mục đích, thời hạn xử lý và chỉ dẫn bằng văn bản.
+    severity: high
+    rationale: The processor may only process within the controller's instructions [verify].
+  - key: security_measures
+    clause_key: security_measures
+    required: true
+    standard: Technical and organisational security measures are described.
+    standard_vi: Mô tả các biện pháp kỹ thuật và tổ chức để bảo vệ dữ liệu cá nhân.
+    severity: high
+    rationale: A core obligation of processors [verify].
+  - key: subprocessors_consent
+    clause_key: subprocessors
+    required: true
+    standard: Sub-processors only with the controller's prior written consent.
+    standard_vi: Chỉ sử dụng bên xử lý phụ khi có sự đồng ý trước bằng văn bản của bên kiểm soát.
+    must_include_any: [đồng ý, chấp thuận, consent, approval]
+    severity: medium
+    rationale: The controller must keep control of who processes its data.
+  - key: cross_border
+    clause_key: cross_border_transfer
+    required: true
+    standard: No transfer abroad without the controller's consent and the required dossier.
+    standard_vi: Không chuyển dữ liệu ra nước ngoài khi chưa có đồng ý của bên kiểm soát và hồ sơ theo quy định.
+    severity: medium
+    rationale: Cross-border transfers need an impact assessment dossier [verify].
+  - key: breach_notification
+    clause_key: breach_notification
+    required: true
+    standard: The processor notifies the controller of a breach without delay (e.g. within 24 hours).
+    standard_vi: Bên xử lý thông báo cho bên kiểm soát không chậm trễ khi có sự cố (ví dụ trong 24 giờ).
+    severity: high
+    rationale: The controller has short statutory deadlines to notify the authority [verify].
+  - key: return_delete
+    clause_key: return_or_destruction
+    required: true
+    standard: Return or delete personal data at the end of processing.
+    standard_vi: Hoàn trả hoặc xóa dữ liệu cá nhân khi kết thúc việc xử lý.
+    severity: medium
+    rationale: Personal data must not be kept beyond its purpose.
+  - key: governing_law_vn
+    clause_key: governing_law
+    required: true
+    standard: Vietnamese law.
+    standard_vi: Pháp luật Việt Nam.
+    must_include_any: [pháp luật việt nam, laws of vietnam, laws of viet nam, vietnamese law, laws of the socialist republic of vietnam]
+    severity: medium
+    rationale: The PDP rules apply to processing in Vietnam regardless [verify].
+  - key: language_prevailing
+    clause_key: language
+    standard: States which language version prevails (bilingual contracts).
+    standard_vi: Quy định bản ngôn ngữ được ưu tiên áp dụng (hợp đồng song ngữ).
+    must_include_any: [ưu tiên, prevail]
+    severity: low
+    rationale: Bilingual contracts need a tie-breaker.

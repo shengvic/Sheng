@@ -27,6 +27,7 @@ class LawRule(BaseModel):
     triggers: list[str] = Field(default_factory=list)  # empty = always
     query: str
     issue: str
+    issue_vi: str = ""  # Vietnamese wording of the issue for VI output (ADR-023)
     severity: Literal["high", "medium", "low"] = "medium"
 
 

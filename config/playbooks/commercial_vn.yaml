@@ -1,0 +1,95 @@
+# Travo starter playbook — DRAFT, requires review by a Vietnamese-qualified lawyer [verify].
+# Sale / supply of goods under Vietnamese law. Firm positions only (ADR-014).
+key: commercial_vn
+version: 1
+name: Sale of goods (Vietnamese law) — starter draft
+applies_to: { contract_types: [SALE], governing_laws: [VN] }
+rules:
+  - key: price_payment_terms
+    clause_key: price_payment
+    required: true
+    standard: Price, currency, invoicing and a payment deadline are stated.
+    standard_vi: Nêu rõ giá, đồng tiền thanh toán, hóa đơn và thời hạn thanh toán.
+    severity: high
+    rationale: Payment disputes are the most common source of claims.
+  - key: price_currency_vnd
+    clause_key: price_payment
+    must_include_any: [vnd, vnđ, việt nam đồng, đồng việt nam, vietnamese dong]
+    severity: medium
+    standard: Prices and payments between Vietnamese residents are in VND.
+    standard_vi: Giá và thanh toán giữa các bên cư trú tại Việt Nam bằng đồng Việt Nam.
+    rationale: >-
+      Pricing or payment in foreign currency between residents is restricted by the foreign
+      exchange rules (Pháp lệnh Ngoại hối and implementing circulars) unless an exemption
+      applies [verify]. Not relevant where a party is a non-resident.
+  - key: delivery_acceptance
+    clause_key: delivery_acceptance
+    required: true
+    standard: Delivery time, place, risk transfer and inspection/acceptance procedure.
+    standard_vi: Thời hạn, địa điểm giao hàng, chuyển rủi ro và thủ tục kiểm tra, nghiệm thu.
+    severity: medium
+    rationale: Defines when the seller has performed and when risk passes.
+  - key: warranties_goods
+    clause_key: warranties
+    required: true
+    standard: Quality warranty with a stated period and remedy (repair, replace, refund).
+    standard_vi: Bảo hành chất lượng với thời hạn và biện pháp khắc phục cụ thể.
+    severity: medium
+    rationale: The buyer's main protection against defective goods.
+  - key: penalty_cap
+    clause_key: penalty
+    max_percent: 8
+    severity: high
+    standard: Penalty no more than 8% of the value of the breached obligation [verify].
+    standard_vi: Mức phạt không quá 8% giá trị phần nghĩa vụ hợp đồng bị vi phạm [verify].
+    rationale: Luật Thương mại 2005, Điều 301 [verify].
+    redline_template: >-
+      The breaching party shall pay a penalty equal to [●]% (not exceeding 8%) of the value of
+      the breached part of the contractual obligation.
+    redline_template_vi: >-
+      Bên vi phạm phải chịu phạt vi phạm với mức [●]% (không vượt quá 8%) giá trị phần nghĩa vụ
+      hợp đồng bị vi phạm.
+  - key: penalty_and_damages
+    clause_key: remedies
+    standard: States whether the injured party may claim both a penalty and damages.
+    standard_vi: Quy định rõ việc bên bị vi phạm được yêu cầu cả phạt vi phạm và bồi thường thiệt hại.
+    must_include_any: [bồi thường, damages]
+    severity: medium
+    rationale: >-
+      Under the Commercial Law both may be claimed where the contract provides for a penalty
+      (Điều 307 [verify]); say so expressly to avoid dispute.
+  - key: liability_not_unlimited
+    clause_key: limitation_of_liability
+    must_not_include_any: [unlimited liability, trách nhiệm không giới hạn]
+    severity: medium
+    rationale: Unlimited liability is not acceptable for the client.
+  - key: force_majeure
+    clause_key: force_majeure
+    required: true
+    standard: Force majeure defined, with notice and mitigation obligations.
+    standard_vi: Định nghĩa sự kiện bất khả kháng, nghĩa vụ thông báo và hạn chế thiệt hại.
+    severity: medium
+    rationale: Allocates risk of events outside the parties' control.
+  - key: governing_law_vn
+    clause_key: governing_law
+    required: true
+    standard: Vietnamese law.
+    standard_vi: Pháp luật Việt Nam.
+    must_include_any: [pháp luật việt nam, laws of vietnam, laws of viet nam, vietnamese law, laws of the socialist republic of vietnam]
+    severity: medium
+    rationale: Foreign law only with a foreign element (Bộ luật Dân sự 2015, Điều 663, 683 [verify]).
+  - key: forum_vn
+    clause_key: dispute_resolution
+    required: true
+    standard: VIAC arbitration or a competent Vietnamese court.
+    standard_vi: Trọng tài VIAC hoặc Tòa án có thẩm quyền của Việt Nam.
+    must_include_any: [viac, trọng tài, tòa án, arbitration, court]
+    severity: medium
+    rationale: A clear, enforceable forum.
+  - key: language_prevailing
+    clause_key: language
+    standard: States which language version prevails (bilingual contracts).
+    standard_vi: Quy định bản ngôn ngữ được ưu tiên áp dụng (hợp đồng song ngữ).
+    must_include_any: [ưu tiên, prevail]
+    severity: medium
+    rationale: Bilingual contracts need a tie-breaker.

@@ -88,13 +88,12 @@ def test_bilingual_review_step_end_to_end(client, make_tenant):
         files={"file": ("nda.docx", vn.table_docx(vn.seeded_clauses()), DOCX_MIME)},
         headers=t.headers(),
     ).json()
-    r = client.post(
-        f"/v1/documents/{doc['id']}/reviews", json={"playbook_key": "nda_sg"}, headers=t.headers()
-    )
+    r = client.post(f"/v1/documents/{doc['id']}/reviews", json={}, headers=t.headers())
     assert r.status_code == 202, r.text
     run_reviews()
     review = client.get(f"/v1/reviews/{r.json()['id']}", headers=t.headers()).json()
     assert review["status"] == "completed", review
+    assert review["playbook_key"] == "nda_vn"  # chosen from contract type + governing law
     assert [s["name"] for s in review["steps"]][:2] == ["prepare", "bilingual"]
     findings = client.get(f"/v1/reviews/{review['id']}/findings", headers=t.headers()).json()
     bilingual = [f for f in findings if f["kind"] == "bilingual"]

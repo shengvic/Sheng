@@ -1,0 +1,75 @@
+# Jurisdiction pack — Vietnam. DRAFT for review by a Vietnamese-qualified lawyer [verify].
+# Triggers and retrieval queries only; legal text comes from the verified index (ADR-014/019).
+# Queries are Vietnamese search terms, because the authoritative text is Vietnamese.
+jurisdiction: VN
+rules:
+  - key: penalty_cap
+    clause_keys: [penalty, remedies]
+    triggers: [phạt, penalty]
+    query: mức phạt vi phạm hợp đồng thương mại không quá 8% giá trị phần nghĩa vụ bị vi phạm
+    issue: Check that the contractual penalty does not exceed the statutory cap for commercial contracts
+    issue_vi: Kiểm tra mức phạt vi phạm có vượt mức trần theo luật đối với hợp đồng thương mại hay không
+    severity: high
+  - key: penalty_and_damages
+    clause_keys: [penalty, remedies, limitation_of_liability]
+    triggers: [bồi thường, damages]
+    query: quan hệ giữa phạt vi phạm và bồi thường thiệt hại khi có thỏa thuận phạt vi phạm
+    issue: Check whether both a penalty and damages can be claimed as drafted
+    issue_vi: Kiểm tra việc áp dụng đồng thời phạt vi phạm và bồi thường thiệt hại
+    severity: medium
+  - key: foreign_governing_law
+    clause_keys: [governing_law]
+    triggers: [law of, laws of, luật của, pháp luật nước, singapore, english law, new york]
+    query: lựa chọn pháp luật áp dụng hợp đồng có yếu tố nước ngoài
+    issue: Check that a foreign governing law is permitted (the contract must have a foreign element)
+    issue_vi: Kiểm tra điều kiện lựa chọn pháp luật nước ngoài (hợp đồng phải có yếu tố nước ngoài)
+    severity: medium
+  - key: foreign_arbitration
+    clause_keys: [dispute_resolution]
+    triggers: [siac, icc, hkiac, arbitration, trọng tài nước ngoài]
+    query: thỏa thuận trọng tài nước ngoài tranh chấp có yếu tố nước ngoài
+    issue: Check that foreign arbitration is available for this dispute and the award enforceable
+    issue_vi: Kiểm tra khả năng lựa chọn trọng tài nước ngoài và công nhận phán quyết
+    severity: medium
+  - key: foreign_currency
+    clause_keys: [price_payment]
+    triggers: [usd, eur, us$, ngoại tệ, đô la]
+    query: hạn chế sử dụng ngoại hối niêm yết thanh toán bằng ngoại tệ giữa người cư trú
+    issue: Check whether pricing or payment in foreign currency is permitted between these parties
+    issue_vi: Kiểm tra việc niêm yết, thanh toán bằng ngoại tệ giữa các bên
+    severity: medium
+  - key: limitation_period
+    clause_keys: [dispute_resolution, remedies, term_and_termination]
+    triggers: [thời hiệu, limitation period, time bar]
+    query: thời hiệu khởi kiện tranh chấp hợp đồng thương mại dân sự
+    issue: Check that any contractual time bar is consistent with the statutory limitation period
+    issue_vi: Kiểm tra thời hạn khởi kiện theo hợp đồng so với thời hiệu theo luật
+    severity: low
+  - key: pdp_processing_contract
+    clause_keys: [processing_scope, data_protection, security_measures]
+    triggers: []
+    query: hợp đồng xử lý dữ liệu cá nhân nghĩa vụ bên xử lý dữ liệu cá nhân
+    issue: Check that the processing terms contain what the personal data protection rules require
+    issue_vi: Kiểm tra nội dung bắt buộc của hợp đồng xử lý dữ liệu cá nhân
+    severity: medium
+  - key: cross_border_transfer
+    clause_keys: [cross_border_transfer, data_protection]
+    triggers: [nước ngoài, abroad, outside vietnam, cross-border, xuyên biên giới]
+    query: chuyển dữ liệu cá nhân ra nước ngoài hồ sơ đánh giá tác động
+    issue: Check the conditions for transferring personal data out of Vietnam
+    issue_vi: Kiểm tra điều kiện chuyển dữ liệu cá nhân ra nước ngoài
+    severity: medium
+  - key: e_signature
+    clause_keys: [signatures, entire_agreement]
+    triggers: [chữ ký điện tử, electronic signature, e-signature]
+    query: giá trị pháp lý của chữ ký điện tử hợp đồng điện tử
+    issue: Check that electronic signature and e-contract formation are valid as drafted
+    issue_vi: Kiểm tra giá trị pháp lý của chữ ký điện tử và hợp đồng điện tử
+    severity: low
+  - key: force_majeure
+    clause_keys: [force_majeure]
+    triggers: []
+    query: sự kiện bất khả kháng miễn trách nhiệm do vi phạm hợp đồng
+    issue: Check the force majeure definition and exemption conditions against the law
+    issue_vi: Kiểm tra định nghĩa và điều kiện miễn trách nhiệm do sự kiện bất khả kháng
+    severity: low

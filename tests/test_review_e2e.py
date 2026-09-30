@@ -110,11 +110,29 @@ def test_my_review_missing_clauses_and_redlines(client, make_tenant):
 
 
 def test_review_requires_matching_playbook(client, make_tenant):
-    from tests.conftest import create_matter, upload
+    import io
+
+    from docx import Document
+
+    from tests.conftest import DOCX_MIME, create_matter
 
     t = make_tenant()
     m = create_matter(client, t, jurisdictions=["VN"])
-    doc = upload(client, t, m["id"], "vn_bilingual_nda").json()
+    # A lease under Vietnamese law: no starter playbook covers leases.
+    d = Document()
+    d.add_heading("HỢP ĐỒNG THUÊ NHÀ (FIXTURE)", level=0)
+    d.add_paragraph("Điều 1. Luật áp dụng")
+    d.add_paragraph("Hợp đồng này được điều chỉnh bởi pháp luật Việt Nam.")
+    d.add_paragraph("Điều 2. Tiền thuê")
+    d.add_paragraph("Tiền thuê là 10.000.000 VND mỗi tháng.")
+    buf = io.BytesIO()
+    d.save(buf)
+    doc = client.post(
+        f"/v1/matters/{m['id']}/documents",
+        files={"file": ("lease.docx", buf.getvalue(), DOCX_MIME)},
+        headers=t.headers(),
+    ).json()
+    assert (doc["contract_type"], doc["governing_law"]) == ("LEASE", "VN")
     r = client.post(f"/v1/documents/{doc['id']}/reviews", json={}, headers=t.headers())
     assert r.status_code == 422
     r = client.post(

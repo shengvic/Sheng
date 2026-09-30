@@ -23,9 +23,14 @@ class ClauseRule(BaseModel):
     max_duration_months: int | None = None
     min_amount: float | None = None
     max_amount: float | None = None
+    # e.g. a contractual penalty capped at a share of the breached obligation's value.
+    max_percent: float | None = None
     severity: Severity = "medium"
     rationale: str = ""
     redline_template: str | None = None
+    # Vietnamese wording for VI / bilingual output (ADR-023).
+    standard_vi: str = ""
+    redline_template_vi: str | None = None
 
 
 class AppliesTo(BaseModel):
